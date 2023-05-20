@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/x-icon" href="/hierarchy-list/favicon.ico">
+        <title>Example page of hierarchy-list</title>
+      <script type="module" crossorigin src="/hierarchy-list/assets/index-728c354a.js"></script>
+      <link rel="stylesheet" href="/hierarchy-list/assets/index-f9a924ee.css">
+    </head>
+    <body>
+        <div class="w-full flex flex-col justify-center items-center p-4">
+            <div class="w-full max-w-6xl md:grid gap-4 grid-cols-2">
+                <ul
+                    class="shadow-lg rounded-md min-w-[300px] phl-list border"
+                    id="app1"
+                ></ul>
+                <div class="shadow-lg rounded-lg border p-4">
+                    <div class="mb-2">
+                        <label
+                            for="flat-1"
+                            class="block mb-2 text-sm font-medium text-gray-900"
+                            >Flat 1</label
+                        >
+                        <pre
+                            id="flat-1"
+                            class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 overflow-auto max-h-96 min-h-[100px]"
+                        ></pre>
+                    </div>
+
+                    <div class="mt-2">
+                        <label
+                            for="tree-1"
+                            class="block mb-2 text-sm font-medium text-gray-900"
+                            >Tree 1</label
+                        >
+                        <pre
+                            id="tree-1"
+                            class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 overflow-auto max-h-96 min-h-[100px]"
+                        ></pre>
+                    </div>
+                </div>
+
+                <ul
+                    class="shadow-lg rounded-md divide-y min-w-[300px] phl-list border"
+                    id="app2"
+                ></ul>
+
+                <div class="shadow-lg rounded-lg border p-4">
+                    <div class="mb-2">
+                        <label
+                            for="flat-2"
+                            class="block mb-2 text-sm font-medium text-gray-900"
+                            >Flat 2</label
+                        >
+                        <pre
+                            id="flat-2"
+                            class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 overflow-auto max-h-96 min-h-[100px]"
+                        ></pre>
+                    </div>
+                    <div class="mt-2">
+                        <label
+                            for="tree-2"
+                            class="block mb-2 text-sm font-medium text-gray-900"
+                            >Tree 2</label
+                        >
+                        <pre
+                            id="tree-2"
+                            class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 overflow-auto max-h-96 min-h-[100px]"
+                        ></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <template>
+            <li class="p-4" data-phl="item">
+                <div class="phl-display">
+                    <button data-phl="handle">
+                        <div class="sr-only">Item Handle</div>
+                    </button>
+                    <div class="phl-label">Item Label</div>
+                    <button data-phl="extract">
+                        <div class="sr-only">Extract inner list</div>
+                    </button>
+                    <button data-phl="collapse">
+                        <div class="sr-only">Collapse inner list</div>
+                    </button>
+                    <button data-phl="expand">
+                        <div class="sr-only">Expand inner list</div>
+                    </button>
+                </div>
+            </li>
+        </template>
+        
+    </body>
+</html>
