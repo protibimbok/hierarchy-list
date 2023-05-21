@@ -5,56 +5,19 @@ import './style.css';
  * to allow moving item of one list to other.
  */
 
-interface Context {
-    dragEl?: HTMLElement;
-    activeEl?: HTMLElement;
-    overEl?: HTMLElement;
-    lastMouseY: number;
-    lastStepX: number;
-    lastMove: number;
-}
-
-/**
- * Listeners for various events
- */
-interface EventListeners {
-    beforeMove?: (
-        this: HierarchyList,
-        item: HTMLElement,
-        oldParent: HTMLElement
-    ) => void;
-    afterMove?: (
-        this: HierarchyList,
-        item: HTMLElement,
-        newParent: HTMLElement
-    ) => void;
-    onStart?: (this: HierarchyList, item: HTMLElement) => void;
-    onRelease?: (this: HierarchyList, item: HTMLElement) => void;
-    onLeftMove?: (
-        this: HierarchyList,
-        item: HTMLElement,
-        newParent: HTMLElement
-    ) => void;
-    onRightMove?: (
-        this: HierarchyList,
-        item: HTMLElement,
-        newParent: HTMLElement
-    ) => void;
-}
-
 /**
  * Configuartion options that are optional for user
  * but required internally.
  * Will be populated in the constructor
  */
-interface BaseConfig {
+interface Config {
     listTag?: 'ul' | 'ol' | 'div';
     listSelector?: string;
     itemSelector?: string;
     handleSelector?: string;
 
     threshold?: number;
-    context?: Context;
+    context?: number | string;
     expandBtn?: string;
     collapseBtn?: string;
     extractBtn?: string;
@@ -65,20 +28,15 @@ interface BaseConfig {
 }
 
 /**
- * Merged BaseConfig & EventListeners
- */
-type Config = BaseConfig & EventListeners;
-
-/**
  * Required version of the `Config`
  */
 type InternalConfig = {
-    [K in keyof BaseConfig]-?: BaseConfig[K];
-} & EventListeners & {
-        listClass: string[];
-        activeClass: string[];
-        dragClass: string[];
-    };
+    [K in keyof Config]-?: Config[K];
+} & {
+    listClass: string[];
+    activeClass: string[];
+    dragClass: string[];
+};
 
 /**
  * Return type of serialize function
@@ -116,15 +74,83 @@ type SerializedTree = Array<{
 }>;
 
 /**
- * Default instance for context
- * all instances that does not provide
- * a context will have this one
+ * Name of the events
  */
-const DEFAULT_CTX: Context = {
-    lastMouseY: 0,
-    lastStepX: 0,
-    lastMove: 0,
-};
+type Events =
+    | 'beforemove'
+    | 'aftermove'
+    | 'start'
+    | 'release'
+    | 'rightmove'
+    | 'leftmove';
+
+/**
+ * Event data that will be passed as an argument is callbacks
+ */
+interface ListEvent {
+    item: Element;
+    from?: Element | null;
+    to?: Element | null;
+}
+
+/**
+ * Signature of the event listener functions
+ */
+type EventCallback = (this: HierarchyList, event: ListEvent) => void;
+
+/**
+ * The Context class that stores the event handlers
+ * and common data
+ */
+
+class Context {
+    dragEl?: HTMLElement;
+    activeEl?: HTMLElement;
+    overEl?: HTMLElement;
+    from?: Element | null;
+    to?: Element | null;
+
+    lastMouseY: number;
+    lastStepX: number;
+    lastMove: number;
+
+    instances: HierarchyList[] = [];
+
+    constructor(list: HierarchyList) {
+        this.lastMouseY = 0;
+        this.lastStepX = 0;
+        this.lastMove = 0;
+        this.instances.push(list);
+    }
+
+    public register(list: HierarchyList) {
+        this.instances.push(list);
+    }
+
+    public dispatch(event: Events) {
+        if (!this.activeEl) {
+            return;
+        }
+        for (let i = 0; i < this.instances.length; i++) {
+            const list = this.instances[i];
+            if (!list.element.contains(this.activeEl)) {
+                continue;
+            }
+            const events = list.events.get(event);
+            if (!events) {
+                return;
+            }
+            events.forEach((cb) => {
+                cb.call(list, {
+                    item: this.activeEl as Element,
+                    from: this.from,
+                    to: this.to,
+                });
+            });
+            return;
+        }
+    }
+}
 
 /**
  * Default configuartion options
@@ -139,11 +165,13 @@ const DEFAULT_CONFIG: InternalConfig = {
     activeClass: ['phl-active'],
     dragClass: ['phl-drag'],
     threshold: 20,
-    context: DEFAULT_CTX,
+    context: 0,
     expandBtn: '[data-phl="expand"]',
     collapseBtn: '[data-phl="collapse"]',
     extractBtn: '[data-phl="extract"]',
 };
+
+const CONTEXTS = new Map<number | string, Context>();
 
 export default class HierarchyList {
     /**
@@ -162,17 +190,22 @@ export default class HierarchyList {
     opts: InternalConfig;
 
     /**
+     * A map of registered events
+     */
+    events: Map<string, Array<EventCallback>> = new Map();
+
+    /**
      * A helper function for initialization
      */
 
     public static make(
         element: HTMLElement | string,
-        options: Config
+        options?: Config
     ): HierarchyList {
         return new HierarchyList(element, options);
     }
 
-    constructor(element: HTMLElement | string, options: Config) {
+    constructor(element: HTMLElement | string, options?: Config) {
         /**
          * If element is a string then find it using query selector
          * otherwise use the element
@@ -188,12 +221,44 @@ export default class HierarchyList {
             this.element = element;
         }
 
+        /**
+         * Prevent from creating multiple list instances on the same element
+         */
+        // @ts-expect-error manipulating built-in element
+        if (typeof this.element.__hierarchy_list_saad === 'undefined') {
+            //@ts-ignore
+            this.element.__hierarchy_list_saad = true;
+        } else {
+            throw new Error(
+                'Trying to create multiple HierarchyList in one element!'
+            );
+        }
+
         // Merge provided options with the default one
         // @ts-ignore
-        this.opts = { ...DEFAULT_CONFIG, ...options };
+        this.opts = { ...DEFAULT_CONFIG, ...(options || {}) };
 
-        // Validate & re-assign the context in case it was invalid
-        this.ctx = this.opts.context || DEFAULT_CTX;
+        /**
+         * Check if the provided context is a string or number
+         * If not then assign it the default value
+         */
+        if (['string', 'number'].indexOf(typeof this.opts.context) === -1) {
+            this.opts.context = '_saad_';
+        }
+
+        /**
+         * First try to get Context from the CONTEXTS cache,
+         * if does not exist then create a new one
+         */
+        let ctx = CONTEXTS.get(this.opts.context);
+        if (!ctx) {
+            ctx = new Context(this);
+            CONTEXTS.set(this.opts.context, ctx);
+        } else {
+            // Register current list in the context
+            ctx.register(this);
+        }
+        this.ctx = ctx;
 
         // Set the listSelector = listTag if selector is not specified
         if (!this.opts.listSelector) {
@@ -234,16 +299,17 @@ export default class HierarchyList {
                 // Remove the active class from moved element
                 rmClass(this.ctx.activeEl, this.opts.activeClass);
 
-                //* Dispatch events
-                if (this.opts.onRelease) {
-                    this.opts.onRelease.call(this, this.ctx.activeEl);
-                }
+                // Dispatch release event
+                this.ctx.dispatch('release');
             }
 
             // Clear the context
             this.ctx.dragEl = undefined;
             this.ctx.activeEl = undefined;
             this.ctx.overEl = undefined;
+
+            this.ctx.from = null;
+            this.ctx.to = null;
 
             // Remove the event listeners added in the document
             document.removeEventListener('mousemove', onDragFn);
@@ -267,7 +333,7 @@ export default class HierarchyList {
          */
 
         if (this.element.matches(this.opts.listSelector)) {
-            this.listEvts(this.element as HTMLElement);
+            this.addListEvts(this.element as HTMLElement);
         } else {
             this.element.addEventListener('mouseenter', () => {
                 if (!this.ctx.activeEl) {
@@ -281,7 +347,7 @@ export default class HierarchyList {
         }
 
         // Add event listeners to all list element
-        findAll(this.opts.listSelector, this.element).forEach(this.listEvts);
+        findAll(this.opts.listSelector, this.element).forEach(this.addListEvts);
     }
 
     /**
@@ -347,10 +413,10 @@ export default class HierarchyList {
             document.addEventListener('mousemove', onDragFn);
             document.addEventListener('mouseup', cleanUpEvt);
 
-            //* Dispatch events
-            if (this.opts.onStart) {
-                this.opts.onStart.call(this, el);
-            }
+            // Dispatch start event
+            this.ctx.from = this.ctx.activeEl.parentElement;
+            this.ctx.to = null;
+            this.ctx.dispatch('start');
         });
 
         /**
@@ -382,7 +448,9 @@ export default class HierarchyList {
                 expand.style.display = 'none';
             }
             expand.addEventListener('click', () => {
-                this.expand(expand.closest(this.opts.itemSelector) as HTMLElement);
+                this.expand(
+                    expand.closest(this.opts.itemSelector) as HTMLElement
+                );
             });
         }
 
@@ -396,7 +464,9 @@ export default class HierarchyList {
                 collapse.style.display = '';
             }
             collapse.addEventListener('click', () => {
-                this.collapse(collapse.closest(this.opts.itemSelector) as HTMLElement);
+                this.collapse(
+                    collapse.closest(this.opts.itemSelector) as HTMLElement
+                );
             });
         }
 
@@ -413,7 +483,9 @@ export default class HierarchyList {
                 extract.style.display = '';
             }
             extract.addEventListener('click', () => {
-                this.extract(extract.closest(this.opts.itemSelector) as HTMLElement);
+                this.extract(
+                    extract.closest(this.opts.itemSelector) as HTMLElement
+                );
             });
         }
     }
@@ -422,7 +494,7 @@ export default class HierarchyList {
      * Add event listeners on the list elements
      * For now it's just inserting items on dragover.
      */
-    private listEvts(el: HTMLElement | HTMLElement) {
+    private addListEvts(el: HTMLElement | HTMLElement) {
         el.addEventListener('mouseenter', () => {
             // An item might get dragged over itself, filter that out
             if (!this.ctx.activeEl || this.ctx.activeEl.contains(el)) {
@@ -432,11 +504,43 @@ export default class HierarchyList {
         });
     }
 
+    /**
+     * Set the target element when dragged over this
+     */
+    private onOver(el: HTMLElement) {
+        if (!this.ctx.dragEl) {
+            return;
+        }
+
+        if (this.ctx.activeEl?.contains(el)) {
+            this.ctx.overEl = undefined;
+            return;
+        }
+        this.ctx.overEl = el;
+    }
+
+    /**
+     * Unset the target element when mouse is left
+     */
+    private onLeave(_el: HTMLElement) {
+        if (!this.ctx.dragEl) {
+            return;
+        }
+        this.ctx.overEl = undefined;
+    }
+
     private onDrag(evt: MouseEvent) {
         const el = this.ctx.dragEl as HTMLElement;
 
-        el.style.left = evt.x + 'px';
-        el.style.top = evt.y + 'px';
+        console.table({
+            screenY: evt.screenY,
+            y: evt.y,
+            clientY: evt.clientY
+        });
+
+        el.style.left = evt.screenX + 'px';
+        el.style.top = evt.screenY + 'px';
+        
 
         /**
          * When an item is unnested/nested it might take time to
@@ -506,31 +610,6 @@ export default class HierarchyList {
     }
 
     /**
-     * Set the target element when dragged over this
-     */
-    private onOver(el: HTMLElement) {
-        if (!this.ctx.dragEl) {
-            return;
-        }
-
-        if (this.ctx.activeEl?.contains(el)) {
-            this.ctx.overEl = undefined;
-            return;
-        }
-        this.ctx.overEl = el;
-    }
-
-    /**
-     * Unset the target element when mouse is left
-     */
-    private onLeave(_el: HTMLElement) {
-        if (!this.ctx.dragEl) {
-            return;
-        }
-        this.ctx.overEl = undefined;
-    }
-
-    /**
      * Move the item one step right (nest)
      */
     private toRight() {
@@ -548,9 +627,10 @@ export default class HierarchyList {
         if (!list) {
             list = document.createElement(this.opts.listTag) as HTMLElement;
             addClass(list, this.opts.listClass);
-            this.listEvts(list);
+            this.addListEvts(list);
             target.appendChild(list);
         }
+
         this.moveTo(list);
 
         // Expand the target
@@ -562,21 +642,20 @@ export default class HierarchyList {
             extract.style.display = '';
         }
 
-        //* Dispatch events
-        if (this.opts.onRightMove) {
-            this.opts.onRightMove.call(this, active, list);
-        }
+        // Dispatch rightmove event
+        this.ctx.dispatch('rightmove');
     }
 
     /**
      * Move the item one step left (unnest)
      */
     private toLeft() {
-        const parentList = this.ctx.activeEl?.closest(this.opts.listSelector);
-        const after = parentList?.closest(this.opts.itemSelector);
         /**
-         * Do nothing if it's already in the outermost list
+         * If `after` belongs to an 'itemSelector' then we need to make the move.
+         * Otherwise return, cos it is already in the outermost list
          */
+        const parentList = this.ctx.activeEl?.parentElement;
+        const after = parentList?.closest(this.opts.itemSelector);
         if (!after) {
             return;
         }
@@ -585,14 +664,8 @@ export default class HierarchyList {
             after.nextElementSibling
         );
 
-        //* Dispatch events
-        if (this.opts.onLeftMove) {
-            this.opts.onLeftMove.call(
-                this,
-                this.ctx.activeEl as HTMLElement,
-                after.parentElement as HTMLElement
-            );
-        }
+        // Dispatch lefttmove event
+        this.ctx.dispatch('leftmove');
     }
 
     /**
@@ -615,10 +688,12 @@ export default class HierarchyList {
          */
         const lastOf = list?.closest(this.opts.itemSelector);
 
-        //* Dispatch beforeMove event
-        if (this.opts.beforeMove) {
-            this.opts.beforeMove.call(this, this.ctx.activeEl, list);
-        }
+        // Update the context for accurate event data
+        this.ctx.from = this.ctx.activeEl.parentElement;
+        this.ctx.to = to;
+
+        // Dispatch beforemove event
+        this.ctx.dispatch('beforemove');
 
         to.insertBefore(this.ctx.activeEl, before);
 
@@ -638,10 +713,8 @@ export default class HierarchyList {
             }
         }
 
-        //* Dispatch afterMove event
-        if (this.opts.afterMove) {
-            this.opts.afterMove.call(this, this.ctx.activeEl, to);
-        }
+        // Dispatch aftermove event
+        this.ctx.dispatch('aftermove');
     }
 
     /**
@@ -734,15 +807,36 @@ export default class HierarchyList {
         }
     }
 
+    /**
+     * This function registers event handlers
+     * @param event name of the event
+     * @param callback function to execute
+     */
+    public on(event: Events, callback: EventCallback): HierarchyList {
+        let arr = this.events.get(event);
+        if (!arr) {
+            arr = [];
+            this.events.set(event, arr);
+        }
+        arr.push(callback);
+        return this;
+    }
+
     public serialize(): SerializedFlat {
         return HierarchyList.serialize(this.element, this.opts.listSelector);
     }
 
     public serializeTree(): SerializedTree {
-        return HierarchyList.serializeTree(this.element, this.opts.listSelector);
+        return HierarchyList.serializeTree(
+            this.element,
+            this.opts.listSelector
+        );
     }
 
-    public static serialize(element: HTMLElement, listSelector: string= 'ul,ol'): SerializedFlat {
+    public static serialize(
+        element: HTMLElement,
+        listSelector: string = 'ul,ol'
+    ): SerializedFlat {
         /**
          * If the element is not a listSelector then
          * find the first listSelector element.
@@ -772,12 +866,20 @@ export default class HierarchyList {
             arr.push(val);
             const inner = find(listSelector, child);
             if (inner) {
-                this._serializeFlat(inner as HTMLElement, arr.length - 1, arr, listSelector);
+                this._serializeFlat(
+                    inner as HTMLElement,
+                    arr.length - 1,
+                    arr,
+                    listSelector
+                );
             }
         }
     }
 
-    public static serializeTree(element: HTMLElement, listSelector: string = 'ol,ul'): SerializedTree {
+    public static serializeTree(
+        element: HTMLElement,
+        listSelector: string = 'ol,ul'
+    ): SerializedTree {
         /**
          * If the element is not a listSelector then
          * find the first listSelector element.
@@ -795,13 +897,21 @@ export default class HierarchyList {
         return arr;
     }
 
-    private static _serializeTree(list: HTMLElement, arr: SerializedTree, listSelector: string) {
+    private static _serializeTree(
+        list: HTMLElement,
+        arr: SerializedTree,
+        listSelector: string
+    ) {
         for (let i = 0; i < list.children.length; i++) {
             const child = list.children[i] as HTMLLIElement;
             const children: SerializedTree = [];
             const inner = find('ul,li', child);
             if (inner) {
-                this._serializeTree(inner as HTMLElement, children, listSelector);
+                this._serializeTree(
+                    inner as HTMLElement,
+                    children,
+                    listSelector
+                );
             }
             arr.push({
                 data: child.dataset,
