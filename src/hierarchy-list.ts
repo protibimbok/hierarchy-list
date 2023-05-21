@@ -100,6 +100,28 @@ interface ListEvent {
 type EventCallback = (this: HierarchyList, event: ListEvent) => void;
 
 /**
+ * Default configuartion options
+ */
+const DEFAULT_CONFIG: InternalConfig = {
+    listTag: 'ul',
+    listSelector: 'ul',
+    itemSelector: 'li',
+    handleSelector: '[data-phl="handle"]',
+
+    listClass: ['phl-list'],
+    activeClass: ['phl-active'],
+    dragClass: ['phl-drag'],
+    threshold: 20,
+    context: 0,
+    expandBtn: '[data-phl="expand"]',
+    collapseBtn: '[data-phl="collapse"]',
+    extractBtn: '[data-phl="extract"]',
+};
+
+// The Context cache
+const CONTEXTS = new Map<number | string, Context>();
+
+/**
  * The Context class that stores the event handlers
  * and common data
  */
@@ -152,27 +174,6 @@ class Context {
         }
     }
 }
-
-/**
- * Default configuartion options
- */
-const DEFAULT_CONFIG: InternalConfig = {
-    listTag: 'ul',
-    listSelector: 'ul',
-    itemSelector: 'li',
-    handleSelector: '[data-phl="handle"]',
-
-    listClass: ['phl-list'],
-    activeClass: ['phl-active'],
-    dragClass: ['phl-drag'],
-    threshold: 20,
-    context: 0,
-    expandBtn: '[data-phl="expand"]',
-    collapseBtn: '[data-phl="collapse"]',
-    extractBtn: '[data-phl="extract"]',
-};
-
-const CONTEXTS = new Map<number | string, Context>();
 
 export default class HierarchyList {
     /**
@@ -352,7 +353,7 @@ export default class HierarchyList {
          */
         this.element.addEventListener('mouseleave', () => {
             this.ctx.dispatch('moveout');
-        })
+        });
 
         // Add event listeners to all list element
         findAll(this.opts.listSelector, this.element).forEach(this.addListEvts);
@@ -387,7 +388,6 @@ export default class HierarchyList {
             // Last position after any nesting/unnesting
             this.ctx.lastStepX = evt.x;
 
-            
             /**
              * Make a clone of the active element to move with mouse
              * and add given css classes.
@@ -543,7 +543,6 @@ export default class HierarchyList {
 
         el.style.left = evt.x + 'px';
         el.style.top = evt.y + 'px';
-        
 
         /**
          * When an item is unnested/nested it might take time to
