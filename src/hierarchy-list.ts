@@ -82,7 +82,8 @@ type Events =
     | 'start'
     | 'release'
     | 'rightmove'
-    | 'leftmove';
+    | 'leftmove'
+    | 'moveout';
 
 /**
  * Event data that will be passed as an argument is callbacks
@@ -345,6 +346,13 @@ export default class HierarchyList {
                 }
             });
         }
+
+        /**
+         * Dispatch element out
+         */
+        this.element.addEventListener('mouseleave', () => {
+            this.ctx.dispatch('moveout');
+        })
 
         // Add event listeners to all list element
         findAll(this.opts.listSelector, this.element).forEach(this.addListEvts);
