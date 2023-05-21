@@ -387,13 +387,7 @@ export default class HierarchyList {
             // Last position after any nesting/unnesting
             this.ctx.lastStepX = evt.x;
 
-            /**
-             * Set the activeEl that will be moved
-             * and the the activeClass provided in the options
-             */
-            this.ctx.activeEl = el;
-            addClass(this.ctx.activeEl, this.opts.activeClass);
-
+            
             /**
              * Make a clone of the active element to move with mouse
              * and add given css classes.
@@ -413,6 +407,13 @@ export default class HierarchyList {
             // Set initial position
             this.ctx.dragEl.style.left = evt.x + 'px';
             this.ctx.dragEl.style.top = evt.y + 'px';
+
+            /**
+             * Set the activeEl that will be moved
+             * and the the activeClass provided in the options
+             */
+            this.ctx.activeEl = el;
+            addClass(this.ctx.activeEl, this.opts.activeClass);
 
             /**
              * Add event listeners to the document so that
