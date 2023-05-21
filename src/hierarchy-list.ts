@@ -194,7 +194,7 @@ export default class HierarchyList {
     /**
      * A map of registered events
      */
-    events: Map<string, Array<EventCallback>> = new Map();
+    events: Map<Events, Array<EventCallback>> = new Map();
 
     /**
      * A helper function for initialization
@@ -350,9 +350,19 @@ export default class HierarchyList {
 
         /**
          * Dispatch element out
+         * we need to dispatch it from here because when the item
+         * moves outside of this.element, ctx.dispatch will not fire it
          */
         this.element.addEventListener('mouseleave', () => {
-            this.ctx.dispatch('moveout');
+            const evts = this.events.get('moveout');
+            if(!this.ctx.activeEl || !evts) {
+                return;
+            }
+            evts.forEach((cb) => {
+                cb.call(this, {
+                    item: this.ctx.activeEl as Element
+                });
+            })
         });
 
         // Add event listeners to all list element
