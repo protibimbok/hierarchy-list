@@ -401,7 +401,7 @@ export default class HierarchyList {
              * * style.position = 'absolute'
              * * style.pointerEvents = 'none' (So that it does not interfere with mouse events)
              */
-            this.ctx.dragEl.style.position = 'absolute';
+            this.ctx.dragEl.style.position = 'fixed';
             this.ctx.dragEl.style.pointerEvents = 'none';
 
             // Set initial position
@@ -541,14 +541,8 @@ export default class HierarchyList {
     private onDrag(evt: MouseEvent) {
         const el = this.ctx.dragEl as HTMLElement;
 
-        console.table({
-            screenY: evt.screenY,
-            y: evt.y,
-            clientY: evt.clientY
-        });
-
-        el.style.left = evt.screenX + 'px';
-        el.style.top = evt.screenY + 'px';
+        el.style.left = evt.x + 'px';
+        el.style.top = evt.y + 'px';
         
 
         /**

@@ -28,10 +28,8 @@ for (let i = 0; i < 10; i++) {
     app2.appendChild(item.cloneNode(true));
 }
 
-onRelease1.call(HierarchyList.make(app1).on('release', onRelease1).on('moveout', () => {
-    console.log('Out');
-}));
-onRelease2.call(HierarchyList.make(app2).on('release', onRelease2));
+onRelease1.call(HierarchyList.make(app1).on('release', onRelease1).on('moveout', onRelease1));
+onRelease2.call(HierarchyList.make(app2).on('release', onRelease2).on('moveout', onRelease2));
 
 function onRelease1(this: HierarchyList) {
     display1Flat.innerHTML = JSON.stringify(this.serialize(), null, 2);
