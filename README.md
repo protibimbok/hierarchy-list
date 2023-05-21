@@ -1,6 +1,12 @@
 # hierarchy-list
 
+[![npm](https://img.shields.io/npm/dt/hierarchy-list.svg?&logo=npm)](https://www.npmjs.com/package/hierarchy-list)
+[![npm](https://img.shields.io/npm/v/hierarchy-list.svg?&logo=npm)](https://www.npmjs.com/package/hierarchy-list)
+[![GitHub issues](https://img.shields.io/github/issues-raw/protibimbok/hierarchy-list.svg?style=?style=flat-square&logo=github)](https://github.com/protibimbok/hierarchy-list)
+
 HierarchyList is a lightweight JavaScript library that enables users to create and edit nested lists with ease. It provides a user-friendly interface for managing hierarchical data, allowing items to be nested and unnested within a list.
+
+## [Demo](https://protibimbok.github.io/hierarchy-list) | [Documentation](https://https://protibimbok.github.io/hierarchy-list)
 
 ## Installation
 
@@ -215,19 +221,18 @@ The HierarchyList library provides several configuration options to customize it
 
 -   **threshold** (optional, default: 20): Specifies the distance (in pixels) that the drag movement must exceed before triggering a right or left shift. This helps prevent accidental nesting/unnesting of items.
 
--   **context** (optional): An optional context object that is used across instances to move item frfom one list into other. By default all instances share the same context, just pass an empty object `{}` to prevent a list from being able to share items.
+-   **context** (optional): An optional context identifier (`number` | `string`) that is used across instances to move item from one list into other. By default all instances share the same context, just pass an unique string/number to prevent a list from being able to share items.
 
     To let two lists share elements:
 
     ```javascript
-    const ctx = {};
     HierarchyList.make('#list1-id', {
         // options
-        context: ctx,
+        context: 1,
     });
     HierarchyList.make('#list2-id', {
         // options
-        context: ctx,
+        context: 1,
     });
     ```
 
@@ -264,5 +269,8 @@ When configuring the HierarchyList library, it's important to use the configurat
 -   **itemSelector**: Use this option to set a CSS selector specifically for the list item elements. The selector should target the individual list items within the main list. Avoid using selectors that select elements other than the list items, as it may interfere with the library's functionality.
 
 -   **Nested List Structure**: It's important to adhere to the standard structure of nested lists. Each list item should be contained within a `listSelector` element, and the nested list elements should only appear as children of list items. Mixing other elements within the list structure may result in unexpected behavior or rendering issues.
+
+### Styling*
+Make sure you style the dragging element (option: `dragClass`) in global scope as it will be placed in the body.
 
 By following these cautionary guidelines, you can ensure that the configuration options are used appropriately and that the HierarchyList library functions correctly with the expected list structure.
