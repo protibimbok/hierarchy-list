@@ -360,22 +360,21 @@ export default class HierarchyList {
          * and sometimes it will be.
          * When it is not a list element, we need to add currently dragged
          * element in the first list element.
-         * If it is a list element then add normal event listeners as all lists.
          */
 
-        if (this.element.matches(this.opts.listSelector)) {
-            this.addListEvts(this.element as HTMLElement);
-        } else {
-            this.element.addEventListener('mouseenter', () => {
-                if (!this.ctx.activeEl) {
-                    return;
-                }
-                const list = find(this.opts.listSelector, this.element);
-                if (list) {
-                    this.moveTo(list);
-                }
-            });
-        }
+        this.element.addEventListener('mouseenter', () => {
+            if (!this.ctx.activeEl) {
+                return;
+            }
+            if (this.element.matches(this.opts.listSelector)) {
+                this.element.appendChild(this.ctx.activeEl);
+                return;
+            }
+            const list = find(this.opts.listSelector, this.element);
+            if (list) {
+                this.moveTo(list);
+            }
+        });
 
         /**
          * Dispatch element out
@@ -393,9 +392,6 @@ export default class HierarchyList {
                 });
             });
         });
-
-        // Add event listeners to all list element
-        findAll(this.opts.listSelector, this.element).forEach(this.addListEvts);
     }
 
     /**
@@ -483,7 +479,17 @@ export default class HierarchyList {
         handle.addEventListener('mousedown', start);
 
         if (this.hasTouch) {
-            handle.addEventListener('touchstart', start);
+            handle.addEventListener('touchstart', (evt: TouchEvent) => {
+                /**
+                 * Only start dragging if there's one touch
+                 * two or more are for zoom/pinch or other actions
+                 * we don't want to mess with
+                 */
+                if (evt.touches.length !== 1) {
+                    return;
+                }
+                start(evt);
+            });
         }
 
         /**
@@ -491,7 +497,6 @@ export default class HierarchyList {
          * this and dragged out of this
          */
         el.addEventListener('mouseenter', () => this.onOver(el));
-        el.addEventListener('mouseleave', () => this.onLeave(el));
 
         // Add listeners for button actions (expand, collapse, extract)
         this.btnEvts(el);
@@ -558,46 +563,29 @@ export default class HierarchyList {
     }
 
     /**
-     * Add event listeners on the list elements
-     * For now it's just inserting items on dragover.
-     */
-    private addListEvts(el: HTMLElement | HTMLElement) {
-        el.addEventListener('mouseenter', () => {
-            // An item might get dragged over itself, filter that out
-            if (!this.ctx.activeEl || this.ctx.activeEl.contains(el)) {
-                return;
-            }
-            this.moveTo(el);
-        });
-    }
-
-    /**
      * Set the target element when dragged over this
      */
     private onOver(el: HTMLElement) {
-        if (!this.ctx.dragEl) {
+        if (!this.ctx.activeEl) {
             return;
         }
 
-        if (this.ctx.activeEl?.contains(el)) {
+        if (this.ctx.activeEl.contains(el)) {
             this.ctx.overEl = undefined;
             return;
         }
         this.ctx.overEl = el;
     }
 
-    /**
-     * Unset the target element when mouse is left
-     */
-    private onLeave(_el: HTMLElement) {
-        if (!this.ctx.dragEl) {
-            return;
-        }
-        this.ctx.overEl = undefined;
-    }
-
     private onTouchMove(evt: TouchEvent) {
         const touch = evt.touches[0];
+
+        const over = document.elementFromPoint(touch.clientX, touch.clientY);
+        const li = over?.closest(this.opts.itemSelector);
+        if (li && this.element.contains(li)) {
+            this.onOver(li as HTMLElement);
+        }
+
         this.onDrag({
             x: touch.clientX,
             y: touch.clientY,
@@ -695,7 +683,6 @@ export default class HierarchyList {
         if (!list) {
             list = document.createElement(this.opts.listTag) as HTMLElement;
             addClass(list, this.opts.listClass);
-            this.addListEvts(list);
             target.appendChild(list);
         }
 
