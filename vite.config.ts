@@ -11,7 +11,12 @@ export default defineConfig(({ command }) => {
                     formats: ['es', 'cjs', 'umd'],
                     fileName: 'hierarchy-list',
                 },
-                copyPublicDir: false
+                copyPublicDir: false,
+                rollupOptions: {
+                    output: {
+                        exports: 'named'
+                    }
+                }
             },
             plugins: [dts()],
         };
