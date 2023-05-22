@@ -100,6 +100,16 @@ interface ListEvent {
 type EventCallback = (this: HierarchyList, event: ListEvent) => void;
 
 /**
+ * We need a common drag event type to handle both mouse
+ * and touch movements
+ */
+
+interface DragEvent {
+    x: number;
+    y: number;
+}
+
+/**
  * Default configuartion options
  */
 const DEFAULT_CONFIG: InternalConfig = {
@@ -197,6 +207,12 @@ export default class HierarchyList {
     events: Map<Events, Array<EventCallback>> = new Map();
 
     /**
+     * Stores if the device supports touch
+     */
+    hasTouch: boolean =
+        'ontouchstart' in window || (navigator.maxTouchPoints as any);
+
+    /**
      * A helper function for initialization
      */
 
@@ -284,12 +300,21 @@ export default class HierarchyList {
          * We need to declare it here because we'll add the listener on mousedown
          * and remove it when click is released.
          */
-        const onDragFn = (evt: MouseEvent) => {
+        const onMouseMoveFn = (evt: MouseEvent) => {
             this.onDrag(evt);
         };
 
         /**
-         * Same as `onDragFn` but this one is used to cleanup the
+         * Event handler for touchmove.
+         * We need to declare it here because we'll add the listener on mousedown
+         * and remove it when click is released.
+         */
+        const onTouchMoveFn = (evt: TouchEvent) => {
+            this.onTouchMove(evt);
+        };
+
+        /**
+         * Same as `onTouchMoveFn` & `onMouseMoveFn` but this one is used to cleanup the
          * registered events and context to improve the performance
          * for other activities in the browser
          */
@@ -314,15 +339,19 @@ export default class HierarchyList {
             this.ctx.to = null;
 
             // Remove the event listeners added in the document
-            document.removeEventListener('mousemove', onDragFn);
+            document.removeEventListener('mousemove', onMouseMoveFn);
             document.removeEventListener('mouseup', cleanUpEvt);
+
+            document.removeEventListener('touchmove', onTouchMoveFn);
+            document.removeEventListener('touchend', cleanUpEvt);
         };
 
         // Register all items in the given container
         findAll(this.opts.handleSelector, this.element).forEach((handle) => {
             this.initItem(handle, {
-                onDragFn,
+                onMouseMoveFn,
                 cleanUpEvt,
+                onTouchMoveFn
             });
         });
 
@@ -331,22 +360,21 @@ export default class HierarchyList {
          * and sometimes it will be.
          * When it is not a list element, we need to add currently dragged
          * element in the first list element.
-         * If it is a list element then add normal event listeners as all lists.
          */
 
-        if (this.element.matches(this.opts.listSelector)) {
-            this.addListEvts(this.element as HTMLElement);
-        } else {
-            this.element.addEventListener('mouseenter', () => {
-                if (!this.ctx.activeEl) {
-                    return;
-                }
-                const list = find(this.opts.listSelector, this.element);
-                if (list) {
-                    this.moveTo(list);
-                }
-            });
-        }
+        this.element.addEventListener('mouseenter', () => {
+            if (!this.ctx.activeEl) {
+                return;
+            }
+            if (this.element.matches(this.opts.listSelector)) {
+                this.element.appendChild(this.ctx.activeEl);
+                return;
+            }
+            const list = find(this.opts.listSelector, this.element);
+            if (list) {
+                this.moveTo(list);
+            }
+        });
 
         /**
          * Dispatch element out
@@ -355,48 +383,32 @@ export default class HierarchyList {
          */
         this.element.addEventListener('mouseleave', () => {
             const evts = this.events.get('moveout');
-            if(!this.ctx.activeEl || !evts) {
+            if (!this.ctx.activeEl || !evts) {
                 return;
             }
             evts.forEach((cb) => {
                 cb.call(this, {
-                    item: this.ctx.activeEl as Element
+                    item: this.ctx.activeEl as Element,
                 });
-            })
+            });
         });
-
-        // Add event listeners to all list element
-        findAll(this.opts.listSelector, this.element).forEach(this.addListEvts);
     }
 
     /**
      * Register events on the items that can be moved
      */
-    private initItem(handle: HTMLElement, { onDragFn, cleanUpEvt }: any) {
-        /**
-         * Handle might be any element inside of item
-         * in that case find the closest item and use that as the element
-         */
-        const el = handle.closest(this.opts.itemSelector) as HTMLElement;
-        if (!el) {
-            return;
-        }
-
-        handle.addEventListener('mousedown', (evt) => {
+    private initItem(handle: HTMLElement, { onMouseMoveFn, cleanUpEvt, onTouchMoveFn }: any) {
+        const start = (evt: MouseEvent | TouchEvent) => {
             /**
              * Prevent default behavior of the browser when clicked
+             * sometimes touchstart is not cancellable (i.e. when scrolling)
              */
-            evt.preventDefault();
+            if (evt.cancelable) {
+                evt.preventDefault();
+            } else {
+                return;
+            }
             evt.stopPropagation();
-
-            /**
-             * We need to track mouse movements to detect if nest/unnest
-             * the element
-             */
-            this.ctx.lastMouseY = evt.y;
-
-            // Last position after any nesting/unnesting
-            this.ctx.lastStepX = evt.x;
 
             /**
              * Make a clone of the active element to move with mouse
@@ -414,10 +426,6 @@ export default class HierarchyList {
             this.ctx.dragEl.style.position = 'fixed';
             this.ctx.dragEl.style.pointerEvents = 'none';
 
-            // Set initial position
-            this.ctx.dragEl.style.left = evt.x + 'px';
-            this.ctx.dragEl.style.top = evt.y + 'px';
-
             /**
              * Set the activeEl that will be moved
              * and the the activeClass provided in the options
@@ -429,21 +437,71 @@ export default class HierarchyList {
              * Add event listeners to the document so that
              * we can track it's movement all over the window
              */
-            document.addEventListener('mousemove', onDragFn);
+            document.addEventListener('mousemove', onMouseMoveFn);
             document.addEventListener('mouseup', cleanUpEvt);
+            if (this.hasTouch) {
+                document.addEventListener('touchmove', onTouchMoveFn);
+                document.addEventListener('touchend', cleanUpEvt);
+            }
+
+            let posX, posY;
+
+            if ('x' in evt && 'y' in evt) {
+                posX = evt.x;
+                posY = evt.y;
+            } else {
+                posX = evt.touches[0].clientX;
+                posY = evt.touches[0].clientY;
+            }
+
+            /**
+             * We need to track mouse movements to detect if nest/unnest
+             * the element
+             */
+            this.ctx.lastMouseY = posY;
+
+            // Last position after any nesting/unnesting
+            this.ctx.lastStepX = posX;
+            // Set initial position
+            this.ctx.dragEl.style.left = posX + 'px';
+            this.ctx.dragEl.style.top = posY + 'px';
 
             // Dispatch start event
             this.ctx.from = this.ctx.activeEl.parentElement;
             this.ctx.to = null;
             this.ctx.dispatch('start');
-        });
+        };
+
+        /**
+         * Handle might be any element inside of item
+         * in that case find the closest item and use that as the element
+         */
+        const el = handle.closest(this.opts.itemSelector) as HTMLElement;
+        if (!el) {
+            return;
+        }
+
+        handle.addEventListener('mousedown', start);
+
+        if (this.hasTouch) {
+            handle.addEventListener('touchstart', (evt: TouchEvent) => {
+                /**
+                 * Only start dragging if there's one touch
+                 * two or more are for zoom/pinch or other actions
+                 * we don't want to mess with
+                 */
+                if (evt.touches.length !== 1) {
+                    return;
+                }
+                start(evt);
+            });
+        }
 
         /**
          * Add event listeners for when an element is dragged over
          * this and dragged out of this
          */
         el.addEventListener('mouseenter', () => this.onOver(el));
-        el.addEventListener('mouseleave', () => this.onLeave(el));
 
         // Add listeners for button actions (expand, collapse, extract)
         this.btnEvts(el);
@@ -510,45 +568,36 @@ export default class HierarchyList {
     }
 
     /**
-     * Add event listeners on the list elements
-     * For now it's just inserting items on dragover.
-     */
-    private addListEvts(el: HTMLElement | HTMLElement) {
-        el.addEventListener('mouseenter', () => {
-            // An item might get dragged over itself, filter that out
-            if (!this.ctx.activeEl || this.ctx.activeEl.contains(el)) {
-                return;
-            }
-            this.moveTo(el);
-        });
-    }
-
-    /**
      * Set the target element when dragged over this
      */
     private onOver(el: HTMLElement) {
-        if (!this.ctx.dragEl) {
+        if (!this.ctx.activeEl) {
             return;
         }
 
-        if (this.ctx.activeEl?.contains(el)) {
+        if (this.ctx.activeEl.contains(el)) {
             this.ctx.overEl = undefined;
             return;
         }
         this.ctx.overEl = el;
     }
 
-    /**
-     * Unset the target element when mouse is left
-     */
-    private onLeave(_el: HTMLElement) {
-        if (!this.ctx.dragEl) {
-            return;
+    private onTouchMove(evt: TouchEvent) {
+        const touch = evt.touches[0];
+
+        const over = document.elementFromPoint(touch.clientX, touch.clientY);
+        const li = over?.closest(this.opts.itemSelector);
+        if (li && this.element.contains(li)) {
+            this.onOver(li as HTMLElement);
         }
-        this.ctx.overEl = undefined;
+
+        this.onDrag({
+            x: touch.clientX,
+            y: touch.clientY,
+        });
     }
 
-    private onDrag(evt: MouseEvent) {
+    private onDrag(evt: DragEvent) {
         const el = this.ctx.dragEl as HTMLElement;
 
         el.style.left = evt.x + 'px';
@@ -639,7 +688,6 @@ export default class HierarchyList {
         if (!list) {
             list = document.createElement(this.opts.listTag) as HTMLElement;
             addClass(list, this.opts.listClass);
-            this.addListEvts(list);
             target.appendChild(list);
         }
 
