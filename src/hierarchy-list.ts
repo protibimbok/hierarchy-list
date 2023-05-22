@@ -116,16 +116,16 @@ const DEFAULT_CONFIG: InternalConfig = {
     listTag: 'ul',
     listSelector: 'ul',
     itemSelector: 'li',
-    handleSelector: '[data-phl="handle"]',
+    handleSelector: '.phl-handle',
 
     listClass: ['phl-list'],
     activeClass: ['phl-active'],
     dragClass: ['phl-drag'],
     threshold: 20,
     context: 0,
-    expandBtn: '[data-phl="expand"]',
-    collapseBtn: '[data-phl="collapse"]',
-    extractBtn: '[data-phl="extract"]',
+    expandBtn: '.phl-expand',
+    collapseBtn: '.phl-collapse',
+    extractBtn: '.phl-extract',
 };
 
 // The Context cache
@@ -185,7 +185,7 @@ class Context {
     }
 }
 
-export default class HierarchyList {
+export class HierarchyList {
     /**
      * Context of this instance
      */
@@ -351,7 +351,7 @@ export default class HierarchyList {
             this.initItem(handle, {
                 onMouseMoveFn,
                 cleanUpEvt,
-                onTouchMoveFn
+                onTouchMoveFn,
             });
         });
 
@@ -397,7 +397,10 @@ export default class HierarchyList {
     /**
      * Register events on the items that can be moved
      */
-    private initItem(handle: HTMLElement, { onMouseMoveFn, cleanUpEvt, onTouchMoveFn }: any) {
+    private initItem(
+        handle: HTMLElement,
+        { onMouseMoveFn, cleanUpEvt, onTouchMoveFn }: any
+    ) {
         const start = (evt: MouseEvent | TouchEvent) => {
             /**
              * Prevent default behavior of the browser when clicked
@@ -999,3 +1002,5 @@ function rmClass(el: HTMLElement, classes: string[]) {
 function addClass(el: HTMLElement, classes: string[]) {
     classes.forEach((name) => el.classList.add(name));
 }
+
+export default HierarchyList;

@@ -1,7 +1,5 @@
-@tailwind utilities;
-
 .phl-list {
-    @apply divide-y;
+    @apply divide-y list-none m-0 p-0;
 }
 .phl-list .phl-list {
     @apply border rounded-sm mt-4;
@@ -16,11 +14,15 @@
     @apply opacity-30;
 }
 
-.phl-display {
+.phl-element {
     @apply flex items-center;
 }
 
-[data-phl='handle'] {
+.phl-item {
+    @apply p-4;
+}
+
+.phl-handle {
     @apply relative h-3 w-4 mr-2;
     @apply bg-gradient-to-r from-gray-300 to-gray-300;
     @apply cursor-pointer;
@@ -29,42 +31,42 @@
     background-repeat: no-repeat;
 }
 
-[data-phl='handle']::before,
-[data-phl='handle']::after {
+.phl-handle::before,
+.phl-handle::after {
     content: '';
     @apply absolute h-[2px] w-full left-0;
     @apply bg-gray-300;
 }
 
-[data-phl='handle']::before {
+.phl-handle::before {
     @apply top-0;
 }
-[data-phl='handle']::after {
+.phl-handle::after {
     @apply bottom-0;
 }
 
-[data-phl='expand'],
-[data-phl='collapse'],
-[data-phl='extract'] {
+.phl-expand,
+.phl-collapse,
+.phl-extract {
     @apply h-5 w-5 leading-3 rounded-md relative;
     @apply bg-gray-100;
 }
 
-[data-phl='expand']::after,
-[data-phl='collapse']::after {
+.phl-expand::after,
+.phl-collapse::after {
     content: '';
     @apply absolute left-1/2 top-1/2 -translate-x-1/2 rotate-45;
     @apply h-2 w-2 border-gray-400;
 }
 
-[data-phl='expand']::after {
+.phl-expand::after {
     @apply border-r-2 border-b-2 -translate-y-3/4;
 }
-[data-phl='collapse']::after {
+.phl-collapse::after {
     @apply border-l-2 border-t-2 -translate-y-1/4;
 }
 
-[data-phl='extract'] {
+.phl-extract {
     @apply mr-1;
     background-image: url('data:image/svg+xml,%3Csvg xmlns="http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg" width="24" height="24" viewBox="0 0 24 24"%3E%3Cg id="evaUndoFill0"%3E%3Cg id="evaUndoFill1"%3E%3Cpath id="evaUndoFill2" fill="rgb(156, 163, 175)" d="M20.22 21a1 1 0 0 1-1-.76a8.91 8.91 0 0 0-7.8-6.69v1.12a1.78 1.78 0 0 1-1.09 1.64A2 2 0 0 1 8.18 16l-5.06-4.41a1.76 1.76 0 0 1 0-2.68l5.06-4.42a2 2 0 0 1 2.18-.3a1.78 1.78 0 0 1 1.09 1.64V7A10.89 10.89 0 0 1 21.5 17.75a10.29 10.29 0 0 1-.31 2.49a1 1 0 0 1-1 .76Z"%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E');
     background-size: contain;
