@@ -401,8 +401,13 @@ export default class HierarchyList {
         const start = (evt: MouseEvent | TouchEvent) => {
             /**
              * Prevent default behavior of the browser when clicked
+             * sometimes touchstart is not cancellable (i.e. when scrolling)
              */
-            evt.preventDefault();
+            if (evt.cancelable) {
+                evt.preventDefault();
+            } else {
+                return;
+            }
             evt.stopPropagation();
 
             /**
