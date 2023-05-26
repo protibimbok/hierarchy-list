@@ -1,6 +1,9 @@
 lockfileVersion: '6.0'
 
 devDependencies:
+  '@types/node':
+    specifier: ^20.2.4
+    version: 20.2.4
   autoprefixer:
     specifier: ^10.4.14
     version: 10.4.14(postcss@8.4.21)
@@ -18,10 +21,10 @@ devDependencies:
     version: 4.9.5
   vite:
     specifier: ^4.2.0
-    version: 4.2.0
+    version: 4.2.0(@types/node@20.2.4)
   vite-plugin-dts:
     specifier: ^2.3.0
-    version: 2.3.0(vite@4.2.0)
+    version: 2.3.0(@types/node@20.2.4)(vite@4.2.0)
 
 packages:
 
@@ -254,24 +257,24 @@ packages:
     resolution: {integrity: sha512-eF2rxCRulEKXHTRiDrDy6erMYWqNw4LPdQ8UQA4huuxaQsVeRPFl2oM8oDGxMFhJUWZf9McpLtJasDDZb/Bpeg==}
     dev: true
 
-  /@microsoft/api-extractor-model@7.26.9:
+  /@microsoft/api-extractor-model@7.26.9(@types/node@20.2.4):
     resolution: {integrity: sha512-1AowqcRy5qMH/OB7UNkdXa4qLoJp58WFdJ026IMFS8skA0OOAOcvBV/Fi4L7fO1R/8uCMz5KHi3NsqVH4Li8xg==}
     dependencies:
       '@microsoft/tsdoc': 0.14.2
       '@microsoft/tsdoc-config': 0.16.2
-      '@rushstack/node-core-library': 3.59.0
+      '@rushstack/node-core-library': 3.59.0(@types/node@20.2.4)
     transitivePeerDependencies:
       - '@types/node'
     dev: true
 
-  /@microsoft/api-extractor@7.34.9:
+  /@microsoft/api-extractor@7.34.9(@types/node@20.2.4):
     resolution: {integrity: sha512-dasBIbqgHgxvfRfEOX4+ynNYQPnTYc6k7jkL3V4f/MoaS2xFUoIj/D71crrsDxf5MNMybjzeyZPdRNZdzvKBVw==}
     hasBin: true
     dependencies:
-      '@microsoft/api-extractor-model': 7.26.9
+      '@microsoft/api-extractor-model': 7.26.9(@types/node@20.2.4)
       '@microsoft/tsdoc': 0.14.2
       '@microsoft/tsdoc-config': 0.16.2
-      '@rushstack/node-core-library': 3.59.0
+      '@rushstack/node-core-library': 3.59.0(@types/node@20.2.4)
       '@rushstack/rig-package': 0.3.18
       '@rushstack/ts-command-line': 4.13.2
       colors: 1.2.5
@@ -332,7 +335,7 @@ packages:
       picomatch: 2.3.1
     dev: true
 
-  /@rushstack/node-core-library@3.59.0:
+  /@rushstack/node-core-library@3.59.0(@types/node@20.2.4):
     resolution: {integrity: sha512-f8ilzooAu8vj60dDe7weqHvR1NujOaKfe3TaNgAoT22rk+daUTmDtY3TlVGJ3HayVPmw3ffWToDatITi7Ic4ag==}
     peerDependencies:
       '@types/node': '*'
@@ -340,6 +343,7 @@ packages:
       '@types/node':
         optional: true
     dependencies:
+      '@types/node': 20.2.4
       colors: 1.2.5
       fs-extra: 7.0.1
       import-lazy: 4.0.0
@@ -380,6 +384,10 @@ packages:
 
   /@types/estree@1.0.1:
     resolution: {integrity: sha512-LG4opVs2ANWZ1TJoKc937iMmNstM/d0ae1vNbnBvBhqCSezgVUOzcLCqbI5elV8Vy6WKwKjaqR+zO9VKirBBCA==}
+    dev: true
+
+  /@types/node@20.2.4:
+    resolution: {integrity: sha512-ni5f8Xlf4PwnT/Z3f0HURc3ZSw8UyrqMqmM3L5ysa7VjHu8c3FOmIo1nKCcLrV/OAmtf3N4kFna/aJqxsfEtnA==}
     dev: true
 
   /acorn-node@1.8.2:
@@ -1144,30 +1152,30 @@ packages:
     engines: {node: '>= 0.10'}
     dev: true
 
-  /vite-plugin-dts@2.3.0(vite@4.2.0):
+  /vite-plugin-dts@2.3.0(@types/node@20.2.4)(vite@4.2.0):
     resolution: {integrity: sha512-WbJgGtsStgQhdm3EosYmIdTGbag5YQpZ3HXWUAPCDyoXI5qN6EY0V7NXq0lAmnv9hVQsvh0htbYcg0Or5Db9JQ==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
       vite: '>=2.9.0'
     dependencies:
       '@babel/parser': 7.21.8
-      '@microsoft/api-extractor': 7.34.9
+      '@microsoft/api-extractor': 7.34.9(@types/node@20.2.4)
       '@rollup/pluginutils': 5.0.2
-      '@rushstack/node-core-library': 3.59.0
+      '@rushstack/node-core-library': 3.59.0(@types/node@20.2.4)
       debug: 4.3.4
       fast-glob: 3.2.12
       fs-extra: 10.1.0
       kolorist: 1.8.0
       magic-string: 0.29.0
       ts-morph: 18.0.0
-      vite: 4.2.0
+      vite: 4.2.0(@types/node@20.2.4)
     transitivePeerDependencies:
       - '@types/node'
       - rollup
       - supports-color
     dev: true
 
-  /vite@4.2.0:
+  /vite@4.2.0(@types/node@20.2.4):
     resolution: {integrity: sha512-AbDTyzzwuKoRtMIRLGNxhLRuv1FpRgdIw+1y6AQG73Q5+vtecmvzKo/yk8X/vrHDpETRTx01ABijqUHIzBXi0g==}
     engines: {node: ^14.18.0 || >=16.0.0}
     hasBin: true
@@ -1192,6 +1200,7 @@ packages:
       terser:
         optional: true
     dependencies:
+      '@types/node': 20.2.4
       esbuild: 0.17.11
       postcss: 8.4.21
       resolve: 1.22.1

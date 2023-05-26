@@ -1,3 +1,4 @@
+import { copyFileSync } from 'fs';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
@@ -11,9 +12,22 @@ export default defineConfig(({ command }) => {
                     formats: ['es', 'cjs', 'umd'],
                     fileName: 'hierarchy-list',
                 },
-                copyPublicDir: false
+                copyPublicDir: false,
+                rollupOptions: {
+                    output: {
+                        exports: 'named'
+                    }
+                }
             },
-            plugins: [dts()],
+            plugins: [
+                dts(),
+                {
+                    name: "copy-styles",
+                    writeBundle(){
+                        copyFileSync('src/style.css', 'dist/style.css');
+                    }
+                }
+            ],
         };
     } else {
         return {};
