@@ -1001,7 +1001,7 @@ function addClass(el: HTMLElement, classes: string[]) {
     classes.forEach((name) => el.classList.add(name));
 }
 
-//export default HierarchyList;
+export default HierarchyList;
 //@ts-ignore
 if (window && typeof window.HierarchyList === 'undefined'){
     //@ts-ignore
