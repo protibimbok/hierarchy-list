@@ -21,7 +21,7 @@ To start using HierarchyList, follow these steps:
     or add it directly from cdn:
 
     ```html
-    <script src="https://cdn.jsdelivr.net/npm/hierarchy-list/dist/hierarchy-list.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hierarchy-list/dist/hierarchy-list.umd.js"></script>
     ```
 
 2. Make sure to have an HTML container element (e.g., a &lt;div&gt;) where you want the HierarchyList list to appear.
@@ -62,20 +62,20 @@ To use HierarchyList, follow these steps:
     ```html
     <div id="list-id">
         <ul>
-            <li data-phl="handle">Item 1</li>
-            <li data-phl="handle">
+            <li class="phl-handle">Item 1</li>
+            <li class="phl-handle">
                 Item 2
                 <ul>
-                    <li data-phl="handle">Subitem 1</li>
-                    <li data-phl="handle">Subitem 2</li>
+                    <li class="phl-handle">Subitem 1</li>
+                    <li class="phl-handle">Subitem 2</li>
                 </ul>
             </li>
-            <li data-phl="handle">Item 3</li>
+            <li class="phl-handle">Item 3</li>
         </ul>
     </div>
     ```
 
-    Here `data-phl="handle"` tells the library that the item will be dragged by clicking in this element.
+    Here `.phl-handle` class is used to target the handler. An item will be dragged by clicking in this element.
 
     > You can customize this selector however you want to.
 
@@ -84,13 +84,18 @@ To use HierarchyList, follow these steps:
 -   Handle events: HierarchyList provides event hooks that allow you to execute custom code when certain actions occur. Register event listeners on the HierarchyList instance to listen for these events. For example:
 
     ```javascript
-    const list = HierarchyList.make('#list-id', {
-        // other options
-        onRelease: function () {
-            // This will be called when user realeases mouse click after drag
-        },
+    const list = HierarchyList.make('#list-id');
+    list.on('release', function(evt) {
+        // This will be called when user realeases mouse click after drag
+        /**
+         * this: list
+         * evt.item: The item to which the action is triggered
+         * evt.from: Parent before moving (possibly undefined | null)
+         * evt.to: To which the item is moved (possibly undefined | null)
+         */
     });
     ```
+    > Available events are: 'beforemove' | 'aftermove' | 'start' | 'release' | 'rightmove' | 'leftmove' | 'moveout'
 
 An example with all functionalities:
 
@@ -98,34 +103,34 @@ An example with all functionalities:
 <ul class="shadow-lg rounded-md min-w-[300px] phl-list border" id="app1">
     <li class="p-4" data-index="0">
         <div class="phl-display">
-            <button data-phl="handle">
+            <button class="phl-handle">
                 <div class="sr-only">Item Handle</div>
             </button>
             <div class="phl-label">Item 1</div>
-            <button data-phl="extract">
+            <button class="phl-extract">
                 <div class="sr-only">Extract inner list</div>
             </button>
-            <button data-phl="collapse">
+            <button class="phl-collapse">
                 <div class="sr-only">Collapse inner list</div>
             </button>
-            <button data-phl="expand">
+            <button class="phl-expand">
                 <div class="sr-only">Expand inner list</div>
             </button>
         </div>
     </li>
     <li class="p-4" data-index="1">
         <div class="phl-display">
-            <button data-phl="handle">
+            <button class="phl-handle">
                 <div class="sr-only">Item Handle</div>
             </button>
             <div class="phl-label">Item 2</div>
-            <button data-phl="extract">
+            <button class="phl-extract">
                 <div class="sr-only">Extract inner list</div>
             </button>
-            <button data-phl="collapse">
+            <button class="phl-collapse">
                 <div class="sr-only">Collapse inner list</div>
             </button>
-            <button data-phl="expand">
+            <button class="phl-expand">
                 <div class="sr-only">Expand inner list</div>
             </button>
         </div>
@@ -217,7 +222,7 @@ The HierarchyList library provides several configuration options to customize it
 
     > Same as 'listSelector', this option is important if you are using anything other than 'li' for your draggable items
 
--   **handleSelector** (optional, default: \[data-phl="handle"\]): Defines a custom CSS selector for the handle element that triggers dragging. The handle element is usually a specific part of the list item that users can click and drag to initiate item movement.
+-   **handleSelector** (optional, default: \[class="phl-handle"\]): Defines a custom CSS selector for the handle element that triggers dragging. The handle element is usually a specific part of the list item that users can click and drag to initiate item movement.
 
 -   **threshold** (optional, default: 20): Specifies the distance (in pixels) that the drag movement must exceed before triggering a right or left shift. This helps prevent accidental nesting/unnesting of items.
 
@@ -236,11 +241,11 @@ The HierarchyList library provides several configuration options to customize it
     });
     ```
 
--   **expandBtn** (optional, default:\[data-phl="expand"]\): Sets a CSS selector for the element that expands a collapsed nested list. Clicking on this element will show the nested items.
+-   **expandBtn** (optional, default:\[class="phl-expand"]\): Sets a CSS selector for the element that expands a collapsed nested list. Clicking on this element will show the nested items.
 
--   **collapseBtn** (optional, default:\[data-phl="collapse"]\): Defines a CSS selector for the element that collapses an expanded nested list. Clicking on this element will hide the nested items.
+-   **collapseBtn** (optional, default:\[class="phl-collapse"]\): Defines a CSS selector for the element that collapses an expanded nested list. Clicking on this element will hide the nested items.
 
--   **extractBtn** (optional, default:\[data-phl="extract"]\): Specifies a CSS selector for the element that extracts a nested item from its parent list. This allows users to move all items of an nested list to a higher level in the hierarchy.
+-   **extractBtn** (optional, default:\[class="phl-extract"]\): Specifies a CSS selector for the element that extracts a nested item from its parent list. This allows users to move all items of an nested list to a higher level in the hierarchy.
 
 -   **listClass** (optional, default: "phl-list"): Sets a CSS class or an array of CSS classes to be applied to the list elements (When created nested lists). This allows you to customize the appearance of the list.
 
@@ -252,13 +257,19 @@ The HierarchyList library provides several configuration options to customize it
 
 The EventListeners interface defines various event listener functions that can be assigned to the corresponding events. These functions allow you to customize the behavior of the HierarchyList library based on specific user interactions.
 
--   **beforeMove** (optional): A function that is called before an item is moved. It receives the item element and its old parent element as parameters. Use this function to perform any necessary actions or validations before the item is moved.
+-   **beforemove** (optional): A function that is called before an item is moved.
 
--   **afterMove** (optional): A function that is called after an item is moved. It receives the item element and its new parent element as parameters. This function can be used to handle any post-movement actions or updates.
+-   **aftermove** (optional): A function that is called after an item is moved.
 
--   **onStart** (optional): A function that is called when the user starts dragging an item. It receives the item element as a parameter. Use this function to trigger any necessary actions or visual changes when dragging begins.
+-   **onstart** (optional): A function that is called when the user starts dragging an item. Use this function to trigger any necessary actions or visual changes when dragging begins.
 
--   **onRelease** (optional): A function that is called when the user releases the dragged item. It receives the item element as a parameter.
+-   **onrelease** (optional): A function that is called when the user releases the dragged item.
+
+-   **rightmove** (optional): A function that is called after an item is nested.
+
+-   **leftmove** (optional): A function that is called after an item is unnested.
+
+-   **moveout** (optional): A function that is called when an item is moved out of the list.
 
 ## Caution:
 
