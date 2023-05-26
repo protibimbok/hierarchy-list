@@ -6,7 +6,7 @@
 
 HierarchyList is a lightweight JavaScript library that enables users to create and edit nested lists with ease. It provides a user-friendly interface for managing hierarchical data, allowing items to be nested and unnested within a list.
 
-## [Demo](https://protibimbok.github.io/hierarchy-list) | [Documentation](https://https://protibimbok.github.io/hierarchy-list)
+## [Demo](https://protibimbok.github.io/hierarchy-list) | [Documentation](https://protibimbok.github.io/hierarchy-list)
 
 ## Installation
 
