@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <title>Example page of hierarchy-list</title>
+        <script src="../dist/hierarchy-list.umd.js"></script>
+        <link rel="stylesheet" href="../dist/style.css" />
+    </head>
+    <body>
+        <div class="w-full flex flex-col justify-center items-center p-4">
+            <div class="w-full max-w-6xl md:grid gap-4 grid-cols-2">
+                <ul
+                    class="shadow-lg rounded-md min-w-[300px] phl-list border"
+                    id="app1"
+                >
+                    <li class="phl-handle">Item 1</li>
+                    <li class="phl-handle">
+                        Item 2
+                        <ul class="phl-list">
+                            <li class="phl-handle">Subitem 1</li>
+                            <li class="phl-handle">Subitem 2</li>
+                        </ul>
+                    </li>
+                    <li class="phl-handle">Item 3</li>
+                </ul>
+            </div>
+        </div>
+        <script>
+            HierarchyList.make('#app1');
+        </script>
+    </body>
+</html>

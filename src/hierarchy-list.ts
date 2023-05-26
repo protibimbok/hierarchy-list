@@ -1,5 +1,3 @@
-import './style.css';
-
 /**
  * 'Context' is for storing inter list items
  * to allow moving item of one list to other.
@@ -1003,4 +1001,9 @@ function addClass(el: HTMLElement, classes: string[]) {
     classes.forEach((name) => el.classList.add(name));
 }
 
-export default HierarchyList;
+//export default HierarchyList;
+//@ts-ignore
+if (window && typeof window.HierarchyList === 'undefined'){
+    //@ts-ignore
+    window.HierarchyList = HierarchyList;
+}

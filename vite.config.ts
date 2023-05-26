@@ -1,3 +1,4 @@
+import { copyFileSync } from 'fs';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
@@ -18,7 +19,15 @@ export default defineConfig(({ command }) => {
                     }
                 }
             },
-            plugins: [dts()],
+            plugins: [
+                dts(),
+                {
+                    name: "copy-styles",
+                    writeBundle(){
+                        copyFileSync('src/style.css', 'dist/style.css');
+                    }
+                }
+            ],
         };
     } else {
         return {};
