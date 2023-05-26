@@ -1,5 +1,5 @@
 import './styles.css';
-import { HierarchyList } from '../src/hierarchy-list';
+import HierarchyList from '../src/hierarchy-list';
 
 const app1 = document.querySelector('#app1') as HTMLElement;
 const display1Flat = document.querySelector('#flat-1') as HTMLElement;
