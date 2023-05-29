@@ -40,13 +40,16 @@
     padding: 16px;
 }
 
+.phl-handle {
+    cursor: move;
+}
+
 button.phl-handle {
     position: relative;
     height: 12px;
     width: 16px;
     margin-right: 8px;
     background: linear-gradient(to right, rgb(208, 212, 218), rgb(208, 212, 218));
-    cursor: pointer;
     background-size: 100% 2px;
     background-position: center;
     background-repeat: no-repeat;
