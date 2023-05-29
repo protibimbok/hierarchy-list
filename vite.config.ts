@@ -6,6 +6,7 @@ export default defineConfig(({ command }) => {
     if (command === 'build') {
         return {
             build: {
+                minify: false,
                 lib: {
                     entry: 'src/hierarchy-list.ts', // Entry point for your package source files
                     name: 'hierarchy-list', // Name of your package (for UMD/IIFE builds)
@@ -16,8 +17,7 @@ export default defineConfig(({ command }) => {
                 rollupOptions: {
                     output: {
                         exports: 'named',
-                    },
-                    treeshake: false
+                    }
                 },
             },
             plugins: [
