@@ -150,6 +150,8 @@ class Context {
 
     instances: HierarchyList[] = [];
 
+    movedFrom?: HierarchyList;
+
     constructor(list: HierarchyList) {
         this.lastMouseY = 0;
         this.lastStepX = 0;
@@ -377,6 +379,21 @@ export class HierarchyList {
             }
 
             /**
+             * Dispatch the movedOut event
+             */
+            if (this.ctx.movedFrom) {
+                const outEvts = this.ctx.movedFrom.events.get('moveout');
+                if (outEvts) {
+                    outEvts.forEach((cb) => {
+                        cb.call(this.ctx.movedFrom as HierarchyList, {
+                            item: this.ctx.activeEl as Element,
+                        });
+                    });
+                }
+                this.ctx.movedFrom = undefined;
+            }
+            
+            /**
              * Dispatch the movein event
              */
             const evts = this.events.get('movein');
@@ -396,15 +413,10 @@ export class HierarchyList {
          * moves outside of this.element, ctx.dispatch will not fire it
          */
         this.element.addEventListener('mouseleave', () => {
-            const evts = this.events.get('moveout');
-            if (!this.ctx.activeEl || !evts) {
+            if (!this.ctx.activeEl) {
                 return;
             }
-            evts.forEach((cb) => {
-                cb.call(this, {
-                    item: this.ctx.activeEl as Element,
-                });
-            });
+            this.ctx.movedFrom = this;
         });
     }
 

@@ -35,9 +35,12 @@ onChange2.call(
 function onChange1(this: HierarchyList) {
     display1Flat.innerHTML = JSON.stringify(this.serialize(), null, 2);
     display1Tree.innerHTML = JSON.stringify(this.serializeTree(), null, 2);
+    console.log("Fired 1");
+    
 }
 
 function onChange2(this: HierarchyList) {
     display2Flat.innerHTML = JSON.stringify(this.serialize(), null, 2);
     display2Tree.innerHTML = JSON.stringify(this.serializeTree(), null, 2);
+    console.log("Fired 2");
 }
