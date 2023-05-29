@@ -96,10 +96,13 @@
 
         <div class="w-full flex flex-col justify-center items-center p-4">
             <div class="w-full max-w-6xl md:grid gap-4 grid-cols-2">
-                <ul
-                    class="shadow-lg rounded-md min-w-[300px] phl-list border"
-                    id="app1"
-                ></ul>
+                <div class="shadow-lg rounded-md min-w-[300px] border-t">
+                    <div class="flex px-4 py-2.5 items-center border-b">
+                        <h3 class="flex-grow">List 1</h3>
+                        <button type="button" class="bg-blue-500 text-white rounded-md px-4 py-2.5 hover:bg-blue-600" id="add-item">Add</button>
+                    </div>
+                    <ul class="phl-list border m-4" id="app1"></ul>
+                </div>
                 <div class="shadow-lg rounded-lg border p-4">
                     <div class="mb-2">
                         <label

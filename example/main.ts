@@ -12,6 +12,8 @@ const display2Tree = document.querySelector('#tree-2') as HTMLElement;
 const template = document.querySelector('template') as HTMLTemplateElement;
 const itemMain = template.content.querySelector('.phl-item') as HTMLLIElement;
 
+let maxOfOne = 0;
+
 for (let i = 0; i < 10; i++) {
     const item = itemMain.cloneNode(true) as HTMLLIElement;
     //@ts-ignore
@@ -23,21 +25,40 @@ for (let i = 0; i < 10; i++) {
 
     app1.appendChild(item);
     app2.appendChild(item.cloneNode(true));
+    maxOfOne = i;
 }
 
-onRelease1.call(
-    HierarchyList.make(app1).on('release', onRelease1).on('moveout', onRelease1)
-);
-onRelease2.call(
-    HierarchyList.make(app2).on('release', onRelease2).on('moveout', onRelease2)
+const list1 = HierarchyList.make(app1).on('change', onChange1);
+
+onChange1.call(list1);
+
+onChange2.call(
+    HierarchyList.make(app2).on('change', onChange2)
 );
 
-function onRelease1(this: HierarchyList) {
+function onChange1(this: HierarchyList) {
     display1Flat.innerHTML = JSON.stringify(this.serialize(), null, 2);
     display1Tree.innerHTML = JSON.stringify(this.serializeTree(), null, 2);
+    console.log("Fired 1");
+    
 }
 
-function onRelease2(this: HierarchyList) {
+function onChange2(this: HierarchyList) {
     display2Flat.innerHTML = JSON.stringify(this.serialize(), null, 2);
     display2Tree.innerHTML = JSON.stringify(this.serializeTree(), null, 2);
+    console.log("Fired 2");
 }
+
+
+document.getElementById('add-item')?.addEventListener('click', () => {
+    maxOfOne++;
+    const item = itemMain.cloneNode(true) as HTMLLIElement;
+    //@ts-ignore
+    item.querySelector('.phl-label').innerHTML = `Item ${maxOfOne + 1}`;
+
+    item.setAttribute('data-index', maxOfOne.toString());
+    item.dataset['index2'] = maxOfOne.toString();
+    item.dataset.index3 = maxOfOne.toString();
+
+    list1.addItem(item);
+})

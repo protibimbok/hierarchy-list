@@ -75,13 +75,16 @@ type SerializedTree = Array<{
  * Name of the events
  */
 type Events =
+    | 'change'
     | 'beforemove'
     | 'aftermove'
     | 'start'
     | 'release'
     | 'rightmove'
     | 'leftmove'
-    | 'moveout';
+    | 'moveout'
+    | 'movein'
+    | 'extract';
 
 /**
  * Event data that will be passed as an argument is callbacks
@@ -147,6 +150,8 @@ class Context {
 
     instances: HierarchyList[] = [];
 
+    movedFrom?: HierarchyList;
+
     constructor(list: HierarchyList) {
         this.lastMouseY = 0;
         this.lastStepX = 0;
@@ -164,7 +169,7 @@ class Context {
         }
         for (let i = 0; i < this.instances.length; i++) {
             const list = this.instances[i];
-            if (!list.element.contains(this.activeEl)) {
+            if (!list.getElement().contains(this.activeEl)) {
                 continue;
             }
             const events = list.events.get(event);
@@ -187,29 +192,35 @@ export class HierarchyList {
     /**
      * Context of this instance
      */
-    ctx: Context;
+    private ctx: Context;
 
     /**
      * Root element of this instance
      */
-    element: HTMLElement;
+    private element: HTMLElement;
 
     /**
      * Configuartions for this instance
      */
-    opts: InternalConfig;
+    private opts: InternalConfig;
 
     /**
      * A map of registered events
      */
-    events: Map<Events, Array<EventCallback>> = new Map();
+    public events: Map<Events, Array<EventCallback>> = new Map();
 
     /**
      * Stores if the device supports touch
      */
-    hasTouch: boolean =
+    private hasTouch: boolean =
         'ontouchstart' in window || (navigator.maxTouchPoints as any);
 
+    //@ts-ignore
+    private onMouseMoveFn: (evt: MouseEvent) => void;
+    //@ts-ignore
+    private onTouchMoveFn: (evt: TouchEvent) => void;
+    //@ts-ignore
+    private cleanUpEvt: () => void;
     /**
      * A helper function for initialization
      */
@@ -298,7 +309,7 @@ export class HierarchyList {
          * We need to declare it here because we'll add the listener on mousedown
          * and remove it when click is released.
          */
-        const onMouseMoveFn = (evt: MouseEvent) => {
+        this.onMouseMoveFn = (evt: MouseEvent) => {
             this.onDrag(evt);
         };
 
@@ -307,7 +318,7 @@ export class HierarchyList {
          * We need to declare it here because we'll add the listener on mousedown
          * and remove it when click is released.
          */
-        const onTouchMoveFn = (evt: TouchEvent) => {
+        this.onTouchMoveFn = (evt: TouchEvent) => {
             this.onTouchMove(evt);
         };
 
@@ -316,7 +327,7 @@ export class HierarchyList {
          * registered events and context to improve the performance
          * for other activities in the browser
          */
-        const cleanUpEvt = () => {
+        this.cleanUpEvt = () => {
             // Remove the drag element from dom tree
             this.ctx.dragEl?.remove();
 
@@ -337,20 +348,16 @@ export class HierarchyList {
             this.ctx.to = null;
 
             // Remove the event listeners added in the document
-            document.removeEventListener('mousemove', onMouseMoveFn);
-            document.removeEventListener('mouseup', cleanUpEvt);
+            document.removeEventListener('mousemove', this.onMouseMoveFn);
+            document.removeEventListener('mouseup', this.cleanUpEvt);
 
-            document.removeEventListener('touchmove', onTouchMoveFn);
-            document.removeEventListener('touchend', cleanUpEvt);
+            document.removeEventListener('touchmove', this.onTouchMoveFn);
+            document.removeEventListener('touchend', this.cleanUpEvt);
         };
 
         // Register all items in the given container
         findAll(this.opts.handleSelector, this.element).forEach((handle) => {
-            this.initItem(handle, {
-                onMouseMoveFn,
-                cleanUpEvt,
-                onTouchMoveFn,
-            });
+            this.initItem(handle);
         });
 
         /**
@@ -366,22 +373,33 @@ export class HierarchyList {
             }
             if (this.element.matches(this.opts.listSelector)) {
                 this.element.appendChild(this.ctx.activeEl);
-                return;
+            } else {
+                const list = find(this.opts.listSelector, this.element);
+                if (list) {
+                    this.moveTo(list);
+                }
             }
-            const list = find(this.opts.listSelector, this.element);
-            if (list) {
-                this.moveTo(list);
-            }
-        });
 
-        /**
-         * Dispatch element out
-         * we need to dispatch it from here because when the item
-         * moves outside of this.element, ctx.dispatch will not fire it
-         */
-        this.element.addEventListener('mouseleave', () => {
-            const evts = this.events.get('moveout');
-            if (!this.ctx.activeEl || !evts) {
+            /**
+             * Dispatch the movedOut event
+             */
+            if (this.ctx.movedFrom) {
+                const outEvts = this.ctx.movedFrom.events.get('moveout');
+                if (outEvts) {
+                    outEvts.forEach((cb) => {
+                        cb.call(this.ctx.movedFrom as HierarchyList, {
+                            item: this.ctx.activeEl as Element,
+                        });
+                    });
+                }
+                this.ctx.movedFrom = undefined;
+            }
+
+            /**
+             * Dispatch the movein event
+             */
+            const evts = this.events.get('movein');
+            if (!evts) {
                 return;
             }
             evts.forEach((cb) => {
@@ -390,15 +408,24 @@ export class HierarchyList {
                 });
             });
         });
+
+        /**
+         * Dispatch element out
+         * we need to dispatch it from here because when the item
+         * moves outside of this.element, ctx.dispatch will not fire it
+         */
+        this.element.addEventListener('mouseleave', () => {
+            if (!this.ctx.activeEl) {
+                return;
+            }
+            this.ctx.movedFrom = this;
+        });
     }
 
     /**
      * Register events on the items that can be moved
      */
-    private initItem(
-        handle: HTMLElement,
-        { onMouseMoveFn, cleanUpEvt, onTouchMoveFn }: any
-    ) {
+    private initItem(handle: HTMLElement) {
         const start = (evt: MouseEvent | TouchEvent) => {
             /**
              * Prevent default behavior of the browser when clicked
@@ -438,11 +465,11 @@ export class HierarchyList {
              * Add event listeners to the document so that
              * we can track it's movement all over the window
              */
-            document.addEventListener('mousemove', onMouseMoveFn);
-            document.addEventListener('mouseup', cleanUpEvt);
+            document.addEventListener('mousemove', this.onMouseMoveFn);
+            document.addEventListener('mouseup', this.cleanUpEvt);
             if (this.hasTouch) {
-                document.addEventListener('touchmove', onTouchMoveFn);
-                document.addEventListener('touchend', cleanUpEvt);
+                document.addEventListener('touchmove', this.onTouchMoveFn);
+                document.addEventListener('touchend', this.cleanUpEvt);
             }
 
             let posX, posY;
@@ -793,8 +820,6 @@ export class HierarchyList {
         // Show the list if there is any
         const list = find(this.opts.listSelector, el);
         if (!list) {
-            console.log('Here', el);
-
             return;
         }
         list.style.display = '';
@@ -829,9 +854,16 @@ export class HierarchyList {
     private extract(el: HTMLElement) {
         // Return if there is no inner list
         const subList = find(this.opts.listSelector, el);
+        const parent = el.parentElement;
         if (!subList || !parent) {
             return;
         }
+
+        /**
+         * Set the from & to for event listener
+         */
+        this.ctx.from = subList;
+        this.ctx.to = parent;
 
         const beforeOf = el.nextElementSibling;
         /**
@@ -839,7 +871,7 @@ export class HierarchyList {
          * and place them after the old owner
          */
         while (subList.children.length) {
-            el.parentElement?.insertBefore(subList.children[0], beforeOf);
+            parent.insertBefore(subList.children[0], beforeOf);
         }
 
         //  Remove the inner list
@@ -847,6 +879,13 @@ export class HierarchyList {
 
         // As there is no innerlist, hide the buttons
         this.hideAllActions(el);
+
+        // Dispatch the extract event
+        this.ctx.dispatch('extract');
+
+        //Clean the context
+        this.ctx.from = null;
+        this.ctx.to = null;
     }
 
     /**
@@ -873,13 +912,27 @@ export class HierarchyList {
      * @param event name of the event
      * @param callback function to execute
      */
-    public on(event: Events, callback: EventCallback): HierarchyList {
-        let arr = this.events.get(event);
-        if (!arr) {
-            arr = [];
-            this.events.set(event, arr);
+    public on(
+        events: Events | Events[],
+        callback: EventCallback
+    ): HierarchyList {
+        if (typeof events === 'string') {
+            events = [events];
         }
-        arr.push(callback);
+        events.forEach((event) => {
+            if (event === 'change') {
+                this.on(['release', 'moveout', 'extract', 'movein'], callback);
+                return;
+            }
+            let arr = this.events.get(event);
+            if (!arr) {
+                arr = [];
+                this.events.set(event, arr);
+            }
+            if (arr.indexOf(callback) === -1) {
+                arr.push(callback);
+            }
+        });
         return this;
     }
 
@@ -980,6 +1033,89 @@ export class HierarchyList {
             });
         }
     }
+
+    /**
+     * Get the main elemnt
+     * @returns {HTMLElement}
+     */
+    public getElement(): HTMLElement {
+        return this.element;
+    }
+
+    public addItem(
+        item: HTMLElement,
+        target?: {
+            before?: HTMLElement | string;
+            after?: HTMLElement | string;
+            inside?: HTMLElement | string;
+        }
+    ) {
+        if (!item.matches(this.opts.itemSelector)) {
+            console.error(`[HierarchyList] provided item does not match: ${this.opts.itemSelector}`);
+            return;
+        }
+
+        this.initItem(item);
+        
+        if (!target) {
+            let list: any = this.element;
+            if (!list.matches(this.opts.listSelector)) {
+                list = find(this.opts.listSelector, list);
+            }
+            if (list) {
+                list.appendChild(item);
+            }
+            return;
+        }
+
+        if (typeof target.before === 'string') {
+            target.before = find(target.before, this.element) as HTMLElement;
+        }
+        if (target.before) {
+            target.before.parentElement?.insertBefore(item, target.before);
+            return;
+        }
+
+        if (typeof target.after === 'string') {
+            target.after = find(target.after, this.element) as HTMLElement;
+        }
+        if (target.after) {
+            target.after.parentElement?.insertBefore(
+                item,
+                target.after.nextElementSibling
+            );
+            return;
+        }
+
+        if (typeof target.inside === 'string') {
+            target.inside = find(target.inside, this.element) as HTMLElement;
+        }
+        if (target.inside) {
+            if (target.inside.matches(this.opts.listSelector)) {
+                target.inside.appendChild(item);
+                return;
+            }
+            let list = find(this.opts.listSelector, target.inside);
+            if (!list) {
+                list = document.createElement(this.opts.listTag) as HTMLElement;
+                addClass(list, this.opts.listClass);
+                target.inside.appendChild(list);
+            }
+
+            list.appendChild(item);
+    
+            // Expand the target
+            this.expand(list);
+    
+            // Show the extract button
+            const extract = find(this.opts.extractBtn, list);
+            if (extract) {
+                extract.style.display = '';
+            }
+        }
+
+        console.warn('[HierarchyList] No target found to insert at: ', target);
+    }
 }
 
 function find(selector: string, parent?: HTMLElement): HTMLElement | null {
@@ -1003,7 +1139,7 @@ function addClass(el: HTMLElement, classes: string[]) {
 
 export default HierarchyList;
 //@ts-ignore
-if (window && typeof window.HierarchyList === 'undefined'){
+if (window && typeof window.HierarchyList === 'undefined') {
     //@ts-ignore
     window.HierarchyList = HierarchyList;
 }
