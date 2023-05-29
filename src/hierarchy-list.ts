@@ -357,7 +357,7 @@ export class HierarchyList {
 
         // Register all items in the given container
         findAll(this.opts.handleSelector, this.element).forEach((handle) => {
-            this.initItem(handle);
+            this.initHandle(handle);
         });
 
         /**
@@ -425,7 +425,7 @@ export class HierarchyList {
     /**
      * Register events on the items that can be moved
      */
-    private initItem(handle: HTMLElement) {
+    private initHandle(handle: HTMLElement) {
         const start = (evt: MouseEvent | TouchEvent) => {
             /**
              * Prevent default behavior of the browser when clicked
@@ -1054,10 +1054,22 @@ export class HierarchyList {
             console.error(`[HierarchyList] provided item does not match: ${this.opts.itemSelector}`);
             return;
         }
+        
+        
+        let handle: any = item;
+        if (!handle.matches(this.opts.handleSelector)) {
+            handle = find(this.opts.handleSelector, item);
+        }
+        
+        if (!handle) {
+            console.error(`[HierarchyList] provided item does not have any handle: '${this.opts.handleSelector}'`);
+            return;
+        }
 
-        this.initItem(item);
+        this.initHandle(handle);
         
         if (!target) {
+            // If there is no target then just append it in the list
             let list: any = this.element;
             if (!list.matches(this.opts.listSelector)) {
                 list = find(this.opts.listSelector, list);
