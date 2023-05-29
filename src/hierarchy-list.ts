@@ -164,7 +164,7 @@ class Context {
         }
         for (let i = 0; i < this.instances.length; i++) {
             const list = this.instances[i];
-            if (!list.element.contains(this.activeEl)) {
+            if (!list.getElement().contains(this.activeEl)) {
                 continue;
             }
             const events = list.events.get(event);
@@ -187,27 +187,27 @@ export class HierarchyList {
     /**
      * Context of this instance
      */
-    ctx: Context;
+    private ctx: Context;
 
     /**
      * Root element of this instance
      */
-    element: HTMLElement;
+    private element: HTMLElement;
 
     /**
      * Configuartions for this instance
      */
-    opts: InternalConfig;
+    private opts: InternalConfig;
 
     /**
      * A map of registered events
      */
-    events: Map<Events, Array<EventCallback>> = new Map();
+    public events: Map<Events, Array<EventCallback>> = new Map();
 
     /**
      * Stores if the device supports touch
      */
-    hasTouch: boolean =
+    private hasTouch: boolean =
         'ontouchstart' in window || (navigator.maxTouchPoints as any);
 
     /**
@@ -793,8 +793,6 @@ export class HierarchyList {
         // Show the list if there is any
         const list = find(this.opts.listSelector, el);
         if (!list) {
-            console.log('Here', el);
-
             return;
         }
         list.style.display = '';
@@ -829,6 +827,7 @@ export class HierarchyList {
     private extract(el: HTMLElement) {
         // Return if there is no inner list
         const subList = find(this.opts.listSelector, el);
+        const parent = el.parentElement;
         if (!subList || !parent) {
             return;
         }
@@ -837,6 +836,8 @@ export class HierarchyList {
         /**
          * Move all immediate children of the inner list to the parent list
          * and place them after the old owner
+         * moving without `this.moveTo` would improve performance but we'll have to
+         * dispatch a separate event for extract and before/after move
          */
         while (subList.children.length) {
             el.parentElement?.insertBefore(subList.children[0], beforeOf);
@@ -980,6 +981,15 @@ export class HierarchyList {
             });
         }
     }
+
+    /**
+     * Get the main elemnt
+     * @returns {HTMLElement}
+     */
+    public getElement(): HTMLElement{
+        return this.element;
+    }
+
 }
 
 function find(selector: string, parent?: HTMLElement): HTMLElement | null {
