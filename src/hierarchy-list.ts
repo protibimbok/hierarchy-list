@@ -81,7 +81,8 @@ type Events =
     | 'release'
     | 'rightmove'
     | 'leftmove'
-    | 'moveout';
+    | 'moveout'
+    | 'extract';
 
 /**
  * Event data that will be passed as an argument is callbacks
@@ -832,15 +833,19 @@ export class HierarchyList {
             return;
         }
 
+        /**
+         * Set the from & to for event listener
+         */
+        this.ctx.from = subList;
+        this.ctx.to = parent;
+
         const beforeOf = el.nextElementSibling;
         /**
          * Move all immediate children of the inner list to the parent list
          * and place them after the old owner
-         * moving without `this.moveTo` would improve performance but we'll have to
-         * dispatch a separate event for extract and before/after move
          */
         while (subList.children.length) {
-            el.parentElement?.insertBefore(subList.children[0], beforeOf);
+            parent.insertBefore(subList.children[0], beforeOf);
         }
 
         //  Remove the inner list
@@ -848,6 +853,13 @@ export class HierarchyList {
 
         // As there is no innerlist, hide the buttons
         this.hideAllActions(el);
+
+        // Dispatch the extract event
+        this.ctx.dispatch('extract');
+
+        //Clean the context
+        this.ctx.from = null;
+        this.ctx.to = null;
     }
 
     /**
