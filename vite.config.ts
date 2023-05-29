@@ -16,13 +16,9 @@ export default defineConfig(({ command }) => {
                 rollupOptions: {
                     output: {
                         exports: 'named',
-                    }
+                    },
+                    treeshake: false
                 },
-                minify: 'terser',
-                terserOptions: {
-                    keep_classnames: true,
-                    keep_fnames: true
-                }
             },
             plugins: [
                 dts(),
