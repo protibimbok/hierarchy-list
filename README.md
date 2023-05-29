@@ -30,7 +30,11 @@ To start using HierarchyList, follow these steps:
     import 'hierarchy-list/dist/style.css';
     ```
     ```html
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/hierarchy-list/dist/style.css" />
+    <link
+        rel="stylesheet"
+        type="text/css"
+        href="https://cdn.jsdelivr.net/npm/hierarchy-list/dist/style.css"
+    />
     ```
     or style it according to your project's design.
 
@@ -44,6 +48,7 @@ HierarchyList offers the following key features:
 -   **Event Hooks**: Implement custom functionality by listening to events such as item movement, nesting, and unnesting.
 -   **Shared context**: You can easily move item from one list to another.
 -   **Export**: You can export the list as tree or flat structure
+-   **Add**: You can item on the go wherever you want to.
 
 ## User Guide
 
@@ -85,7 +90,7 @@ To use HierarchyList, follow these steps:
 
     ```javascript
     const list = HierarchyList.make('#list-id');
-    list.on('release', function(evt) {
+    list.on('release', function (evt) {
         // This will be called when user realeases mouse click after drag
         /**
          * this: list
@@ -95,6 +100,7 @@ To use HierarchyList, follow these steps:
          */
     });
     ```
+
     > Available events are: 'beforemove' | 'aftermove' | 'start' | 'release' | 'rightmove' | 'leftmove' | 'moveout'
 
 An example with all functionalities:
@@ -204,6 +210,21 @@ The SerializedTree format represents the nested structure of the list, where eac
 
 By calling `list.serialize()` or `list.serializeTree()`, you can obtain the serialized data in either the flat or tree format, depending on their specific requirements for further processing or storage.
 
+## Add new item
+
+You can add an item in the go as:
+
+```javascript
+list.addItem(
+    item: HTMLElement,
+    target?: {
+        before?: HTMLElement | string;
+        after?: HTMLElement | string;
+        inside?: HTMLElement | string;
+    }
+)
+```
+
 ## Configuration
 
 The HierarchyList library provides several configuration options to customize its behavior. These options allow you to control the HTML structure, styling, and event handling. The Config interface merges the options from both BaseConfig and EventListeners.
@@ -257,19 +278,23 @@ The HierarchyList library provides several configuration options to customize it
 
 The EventListeners interface defines various event listener functions that can be assigned to the corresponding events. These functions allow you to customize the behavior of the HierarchyList library based on specific user interactions.
 
--   **beforemove** (optional): A function that is called before an item is moved.
+-   **beforemove** : A function that is called before an item is moved.
 
--   **aftermove** (optional): A function that is called after an item is moved.
+-   **aftermove** : A function that is called after an item is moved.
 
--   **onstart** (optional): A function that is called when the user starts dragging an item. Use this function to trigger any necessary actions or visual changes when dragging begins.
+-   **start** : A function that is called when the user starts dragging an item. Use this function to trigger any necessary actions or visual changes when dragging begins.
 
--   **onrelease** (optional): A function that is called when the user releases the dragged item.
+-   **release** : A function that is called when the user releases the dragged item.
 
--   **rightmove** (optional): A function that is called after an item is nested.
+-   **rightmove** : A function that is called after an item is nested.
 
--   **leftmove** (optional): A function that is called after an item is unnested.
+-   **leftmove** : A function that is called after an item is unnested.
 
--   **moveout** (optional): A function that is called when an item is moved out of the list.
+-   **moveout** : A function that is called when an item is moved out of the list.
+
+-   **movein** : A function that is called when an item is moved into the list.
+
+-   **change** : An union of `movein`, `moveout` & `release`
 
 ## Caution:
 
@@ -281,7 +306,8 @@ When configuring the HierarchyList library, it's important to use the configurat
 
 -   **Nested List Structure**: It's important to adhere to the standard structure of nested lists. Each list item should be contained within a `listSelector` element, and the nested list elements should only appear as children of list items. Mixing other elements within the list structure may result in unexpected behavior or rendering issues.
 
-### Styling*
+### Styling\*
+
 Make sure you style the dragging element (option: `dragClass`) in global scope as it will be placed in the body.
 
 By following these cautionary guidelines, you can ensure that the configuration options are used appropriately and that the HierarchyList library functions correctly with the expected list structure.
