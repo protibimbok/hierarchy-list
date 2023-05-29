@@ -15,8 +15,13 @@ export default defineConfig(({ command }) => {
                 copyPublicDir: false,
                 rollupOptions: {
                     output: {
-                        exports: 'named'
+                        exports: 'named',
                     }
+                },
+                minify: 'terser',
+                terserOptions: {
+                    keep_classnames: true,
+                    keep_fnames: true
                 }
             },
             plugins: [

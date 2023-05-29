@@ -294,7 +294,9 @@ The EventListeners interface defines various event listener functions that can b
 
 -   **movein** : A function that is called when an item is moved into the list.
 
--   **change** : An union of `movein`, `moveout` & `release`
+-   **extract** : When extract button is clicked
+
+-   **change** : An union of `movein`, `moveout`, `release` & `extract`
 
 ## Caution:
 
