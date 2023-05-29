@@ -25,19 +25,19 @@ for (let i = 0; i < 10; i++) {
     app2.appendChild(item.cloneNode(true));
 }
 
-onRelease1.call(
-    HierarchyList.make(app1).on('release', onRelease1).on('moveout', onRelease1)
+onChange1.call(
+    HierarchyList.make(app1).on('change', onChange1)
 );
-onRelease2.call(
-    HierarchyList.make(app2).on('release', onRelease2).on('moveout', onRelease2)
+onChange2.call(
+    HierarchyList.make(app2).on('change', onChange2)
 );
 
-function onRelease1(this: HierarchyList) {
+function onChange1(this: HierarchyList) {
     display1Flat.innerHTML = JSON.stringify(this.serialize(), null, 2);
     display1Tree.innerHTML = JSON.stringify(this.serializeTree(), null, 2);
 }
 
-function onRelease2(this: HierarchyList) {
+function onChange2(this: HierarchyList) {
     display2Flat.innerHTML = JSON.stringify(this.serialize(), null, 2);
     display2Tree.innerHTML = JSON.stringify(this.serializeTree(), null, 2);
 }

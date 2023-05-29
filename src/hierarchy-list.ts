@@ -75,6 +75,7 @@ type SerializedTree = Array<{
  * Name of the events
  */
 type Events =
+    | 'change'
     | 'beforemove'
     | 'aftermove'
     | 'start'
@@ -82,6 +83,7 @@ type Events =
     | 'rightmove'
     | 'leftmove'
     | 'moveout'
+    | 'movein'
     | 'extract';
 
 /**
@@ -367,12 +369,25 @@ export class HierarchyList {
             }
             if (this.element.matches(this.opts.listSelector)) {
                 this.element.appendChild(this.ctx.activeEl);
+            } else {
+                const list = find(this.opts.listSelector, this.element);
+                if (list) {
+                    this.moveTo(list);
+                }
+            }
+
+            /**
+             * Dispatch the movein event
+             */
+            const evts = this.events.get('movein');
+            if (!evts) {
                 return;
             }
-            const list = find(this.opts.listSelector, this.element);
-            if (list) {
-                this.moveTo(list);
-            }
+            evts.forEach((cb) => {
+                cb.call(this, {
+                    item: this.ctx.activeEl as Element,
+                });
+            });
         });
 
         /**
@@ -886,13 +901,27 @@ export class HierarchyList {
      * @param event name of the event
      * @param callback function to execute
      */
-    public on(event: Events, callback: EventCallback): HierarchyList {
-        let arr = this.events.get(event);
-        if (!arr) {
-            arr = [];
-            this.events.set(event, arr);
+    public on(
+        events: Events | Events[],
+        callback: EventCallback
+    ): HierarchyList {
+        if (typeof events === 'string') {
+            events = [events];
         }
-        arr.push(callback);
+        events.forEach((event) => {
+            if (event === 'change') {
+                this.on(['release', 'moveout', 'extract', 'movein'], callback);
+                return;
+            }
+            let arr = this.events.get(event);
+            if (!arr) {
+                arr = [];
+                this.events.set(event, arr);
+            }
+            if (arr.indexOf(callback) === -1) {
+                arr.push(callback);
+            }
+        });
         return this;
     }
 
@@ -998,10 +1027,9 @@ export class HierarchyList {
      * Get the main elemnt
      * @returns {HTMLElement}
      */
-    public getElement(): HTMLElement{
+    public getElement(): HTMLElement {
         return this.element;
     }
-
 }
 
 function find(selector: string, parent?: HTMLElement): HTMLElement | null {
@@ -1025,7 +1053,7 @@ function addClass(el: HTMLElement, classes: string[]) {
 
 export default HierarchyList;
 //@ts-ignore
-if (window && typeof window.HierarchyList === 'undefined'){
+if (window && typeof window.HierarchyList === 'undefined') {
     //@ts-ignore
     window.HierarchyList = HierarchyList;
 }
