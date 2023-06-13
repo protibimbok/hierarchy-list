@@ -1,9 +1,4 @@
 /**
- * 'Context' is for storing inter list items
- * to allow moving item of one list to other.
- */
-
-/**
  * Configuartion options that are optional for user
  * but required internally.
  * Will be populated in the constructor
@@ -99,6 +94,11 @@ interface ListEvent {
  * Signature of the event listener functions
  */
 type EventCallback = (this: HierarchyList, event: ListEvent) => void;
+
+/**
+ * Callback function for serializer
+ */
+type SerializerFn = (element: HTMLElement) => any;
 
 /**
  * We need a common drag event type to handle both mouse
@@ -959,20 +959,22 @@ export class HierarchyList {
         return this;
     }
 
-    public serialize(): SerializedFlat {
-        return HierarchyList.serialize(this.element, this.opts.listSelector);
+    public serialize(serializer?: SerializerFn): SerializedFlat {
+        return HierarchyList.serialize(this.element, this.opts.listSelector, serializer);
     }
 
-    public serializeTree(): SerializedTree {
+    public serializeTree(serializer?: SerializerFn): SerializedTree {
         return HierarchyList.serializeTree(
             this.element,
-            this.opts.listSelector
+            this.opts.listSelector,
+            serializer
         );
     }
 
     public static serialize(
         element: HTMLElement,
-        listSelector: string = 'ul,ol'
+        listSelector: string = 'ul,ol',
+        serializer?: SerializerFn
     ): SerializedFlat {
         /**
          * If the element is not a listSelector then
@@ -987,7 +989,7 @@ export class HierarchyList {
         }
 
         const arr: SerializedFlat = [];
-        this._serializeFlat(element as HTMLElement, -1, arr, listSelector);
+        this._serializeFlat(element as HTMLElement, -1, arr, listSelector, serializer);
         return arr;
     }
 
@@ -995,11 +997,12 @@ export class HierarchyList {
         list: HTMLElement,
         parent: number,
         arr: SerializedFlat,
-        listSelector: string
+        listSelector: string,
+        serializer?: SerializerFn
     ) {
         for (let i = 0; i < list.children.length; i++) {
             const child = list.children[i] as HTMLLIElement;
-            const val = { data: child.dataset, parent };
+            const val = { data: serializer?serializer(child):child.dataset, parent };
             arr.push(val);
             const inner = find(listSelector, child);
             if (inner) {
@@ -1007,7 +1010,8 @@ export class HierarchyList {
                     inner as HTMLElement,
                     arr.length - 1,
                     arr,
-                    listSelector
+                    listSelector,
+                    serializer
                 );
             }
         }
@@ -1015,7 +1019,8 @@ export class HierarchyList {
 
     public static serializeTree(
         element: HTMLElement,
-        listSelector: string = 'ol,ul'
+        listSelector: string = 'ol,ul',
+        serializer?: SerializerFn
     ): SerializedTree {
         /**
          * If the element is not a listSelector then
@@ -1030,14 +1035,15 @@ export class HierarchyList {
         }
 
         const arr: SerializedTree = [];
-        this._serializeTree(element as HTMLElement, arr, listSelector);
+        this._serializeTree(element as HTMLElement, arr, listSelector, serializer);
         return arr;
     }
 
     private static _serializeTree(
         list: HTMLElement,
         arr: SerializedTree,
-        listSelector: string
+        listSelector: string,
+        serializer?: SerializerFn
     ) {
         for (let i = 0; i < list.children.length; i++) {
             const child = list.children[i] as HTMLLIElement;
@@ -1047,11 +1053,12 @@ export class HierarchyList {
                 this._serializeTree(
                     inner as HTMLElement,
                     children,
-                    listSelector
+                    listSelector,
+                    serializer
                 );
             }
             arr.push({
-                data: child.dataset,
+                data: serializer?serializer(child):child.dataset,
                 children,
             });
         }
