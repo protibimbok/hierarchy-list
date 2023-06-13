@@ -116,3 +116,8 @@ button.phl-handle::after {
 .phl-label {
     flex-grow: 1;
 }
+
+
+.phl-moving * {
+    cursor: move !important;
+}

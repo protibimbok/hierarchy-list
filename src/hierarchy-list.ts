@@ -335,9 +335,21 @@ export class HierarchyList {
                 // Remove the active class from moved element
                 rmClass(this.ctx.activeEl, this.opts.activeClass);
 
-                // Dispatch release event
-                this.ctx.dispatch('release');
+                /**
+                 * Dispatch release event inside trycatch to
+                 * make sure the cleanup event work as expected
+                 */
+                try {
+                    this.ctx.dispatch('release');
+                } catch (error) {
+                    console.error(error);
+                }
             }
+
+            /**
+             * Cleanup the cursor
+             */
+            document.body.classList.remove('phl-moving');
 
             // Clear the context
             this.ctx.dragEl = undefined;
@@ -453,6 +465,11 @@ export class HierarchyList {
              */
             this.ctx.dragEl.style.position = 'fixed';
             this.ctx.dragEl.style.pointerEvents = 'none';
+
+            /**
+             * Set the cursor to moving
+             */
+            document.body.classList.add('phl-moving');
 
             /**
              * Set the activeEl that will be moved
@@ -797,7 +814,7 @@ export class HierarchyList {
              * no inner lists, hide the action buttons
              */
             if (lastOf) {
-                this.hideAllActions(lastOf as HTMLElement);
+                this.showOrHideActions(lastOf as HTMLElement);
             }
         }
 
@@ -855,6 +872,10 @@ export class HierarchyList {
         // Return if there is no inner list
         const subList = find(this.opts.listSelector, el);
         const parent = el.parentElement;
+
+        // As there will be no innerlist, hide the buttons
+        this.showOrHideActions(el);
+
         if (!subList || !parent) {
             return;
         }
@@ -877,9 +898,6 @@ export class HierarchyList {
         //  Remove the inner list
         subList.remove();
 
-        // As there is no innerlist, hide the buttons
-        this.hideAllActions(el);
-
         // Dispatch the extract event
         this.ctx.dispatch('extract');
 
@@ -887,23 +905,28 @@ export class HierarchyList {
         this.ctx.from = null;
         this.ctx.to = null;
     }
-
     /**
-     * Hiding all actions are used in `three` places,
+     * Showing all actions are used in `three` places,
      * I think they deserve a separate function
      */
-    private hideAllActions(el: HTMLElement) {
+    private showOrHideActions(el: HTMLElement) {
         const extract = find(this.opts.extractBtn, el);
         const expand = find(this.opts.expandBtn, el);
         const collapse = find(this.opts.collapseBtn, el);
+        const list = find(this.opts.listSelector, el);
+
         if (expand) {
-            expand.style.display = 'none';
+            // Show expand is there is a list and the list is not visible
+            expand.style.display =
+                list && list.style.display === 'none' ? '' : 'none';
         }
         if (collapse) {
-            collapse.style.display = 'none';
+            // Show collapse is there is a list and the list is visible
+            collapse.style.display =
+                list && list.style.display !== 'none' ? '' : 'none';
         }
         if (extract) {
-            extract.style.display = 'none';
+            extract.style.display = list ? '' : 'none';
         }
     }
 
@@ -1051,23 +1074,26 @@ export class HierarchyList {
         }
     ) {
         if (!item.matches(this.opts.itemSelector)) {
-            console.error(`[HierarchyList] provided item does not match: ${this.opts.itemSelector}`);
+            console.error(
+                `[HierarchyList] provided item does not match: ${this.opts.itemSelector}`
+            );
             return;
         }
-        
-        
+
         let handle: any = item;
         if (!handle.matches(this.opts.handleSelector)) {
             handle = find(this.opts.handleSelector, item);
         }
-        
+
         if (!handle) {
-            console.error(`[HierarchyList] provided item does not have any handle: '${this.opts.handleSelector}'`);
+            console.error(
+                `[HierarchyList] provided item does not have any handle: '${this.opts.handleSelector}'`
+            );
             return;
         }
 
         this.initHandle(handle);
-        
+
         if (!target) {
             // If there is no target then just append it in the list
             let list: any = this.element;
@@ -1084,7 +1110,14 @@ export class HierarchyList {
             target.before = find(target.before, this.element) as HTMLElement;
         }
         if (target.before) {
-            target.before.parentElement?.insertBefore(item, target.before);
+            const list = target.before.closest(this.opts.listSelector);
+            list?.insertBefore(
+                item,
+                target.before.closest(this.opts.itemSelector)
+            );
+            const listParentItem = list?.closest(this.opts.itemSelector);
+            listParentItem &&
+                this.showOrHideActions(listParentItem as HTMLElement);
             return;
         }
 
@@ -1092,10 +1125,15 @@ export class HierarchyList {
             target.after = find(target.after, this.element) as HTMLElement;
         }
         if (target.after) {
-            target.after.parentElement?.insertBefore(
+            const list = target.after.closest(this.opts.listSelector);
+            list?.insertBefore(
                 item,
-                target.after.nextElementSibling
+                target.after.closest(this.opts.itemSelector)
+                    ?.nextElementSibling as Element
             );
+            const listParentItem = list?.closest(this.opts.itemSelector);
+            listParentItem &&
+                this.showOrHideActions(listParentItem as HTMLElement);
             return;
         }
 
@@ -1115,15 +1153,13 @@ export class HierarchyList {
             }
 
             list.appendChild(item);
-    
+
             // Expand the target
             this.expand(list);
-    
-            // Show the extract button
-            const extract = find(this.opts.extractBtn, list);
-            if (extract) {
-                extract.style.display = '';
-            }
+            const listParentItem = list?.closest(this.opts.itemSelector);
+            listParentItem &&
+                this.showOrHideActions(listParentItem as HTMLElement);
+            return;
         }
 
         console.warn('[HierarchyList] No target found to insert at: ', target);
