@@ -1,9 +1,4 @@
 /**
- * 'Context' is for storing inter list items
- * to allow moving item of one list to other.
- */
-
-/**
  * Configuartion options that are optional for user
  * but required internally.
  * Will be populated in the constructor
@@ -99,6 +94,11 @@ interface ListEvent {
  * Signature of the event listener functions
  */
 type EventCallback = (this: HierarchyList, event: ListEvent) => void;
+
+/**
+ * Callback function for serializer
+ */
+type SerializerFn = (element: HTMLElement) => any;
 
 /**
  * We need a common drag event type to handle both mouse
@@ -335,9 +335,21 @@ export class HierarchyList {
                 // Remove the active class from moved element
                 rmClass(this.ctx.activeEl, this.opts.activeClass);
 
-                // Dispatch release event
-                this.ctx.dispatch('release');
+                /**
+                 * Dispatch release event inside trycatch to
+                 * make sure the cleanup event work as expected
+                 */
+                try {
+                    this.ctx.dispatch('release');
+                } catch (error) {
+                    console.error(error);
+                }
             }
+
+            /**
+             * Cleanup the cursor
+             */
+            document.body.classList.remove('phl-moving');
 
             // Clear the context
             this.ctx.dragEl = undefined;
@@ -453,6 +465,11 @@ export class HierarchyList {
              */
             this.ctx.dragEl.style.position = 'fixed';
             this.ctx.dragEl.style.pointerEvents = 'none';
+
+            /**
+             * Set the cursor to moving
+             */
+            document.body.classList.add('phl-moving');
 
             /**
              * Set the activeEl that will be moved
@@ -797,7 +814,7 @@ export class HierarchyList {
              * no inner lists, hide the action buttons
              */
             if (lastOf) {
-                this.hideAllActions(lastOf as HTMLElement);
+                this.showOrHideActions(lastOf as HTMLElement);
             }
         }
 
@@ -855,7 +872,10 @@ export class HierarchyList {
         // Return if there is no inner list
         const subList = find(this.opts.listSelector, el);
         const parent = el.parentElement;
+
         if (!subList || !parent) {
+            // As there is no innerlist, hide the buttons
+            this.showOrHideActions(el);
             return;
         }
 
@@ -876,9 +896,9 @@ export class HierarchyList {
 
         //  Remove the inner list
         subList.remove();
-
-        // As there is no innerlist, hide the buttons
-        this.hideAllActions(el);
+        
+        // As there is innerlist, hide the buttons
+        this.showOrHideActions(el);
 
         // Dispatch the extract event
         this.ctx.dispatch('extract');
@@ -887,23 +907,28 @@ export class HierarchyList {
         this.ctx.from = null;
         this.ctx.to = null;
     }
-
     /**
-     * Hiding all actions are used in `three` places,
+     * Showing all actions are used in `three` places,
      * I think they deserve a separate function
      */
-    private hideAllActions(el: HTMLElement) {
+    private showOrHideActions(el: HTMLElement) {
         const extract = find(this.opts.extractBtn, el);
         const expand = find(this.opts.expandBtn, el);
         const collapse = find(this.opts.collapseBtn, el);
+        const list = find(this.opts.listSelector, el);
+
         if (expand) {
-            expand.style.display = 'none';
+            // Show expand is there is a list and the list is not visible
+            expand.style.display =
+                list && list.style.display === 'none' ? '' : 'none';
         }
         if (collapse) {
-            collapse.style.display = 'none';
+            // Show collapse is there is a list and the list is visible
+            collapse.style.display =
+                list && list.style.display !== 'none' ? '' : 'none';
         }
         if (extract) {
-            extract.style.display = 'none';
+            extract.style.display = list ? '' : 'none';
         }
     }
 
@@ -936,20 +961,26 @@ export class HierarchyList {
         return this;
     }
 
-    public serialize(): SerializedFlat {
-        return HierarchyList.serialize(this.element, this.opts.listSelector);
+    public serialize(serializer?: SerializerFn): SerializedFlat {
+        return HierarchyList.serialize(
+            this.element,
+            this.opts.listSelector,
+            serializer
+        );
     }
 
-    public serializeTree(): SerializedTree {
+    public serializeTree(serializer?: SerializerFn): SerializedTree {
         return HierarchyList.serializeTree(
             this.element,
-            this.opts.listSelector
+            this.opts.listSelector,
+            serializer
         );
     }
 
     public static serialize(
         element: HTMLElement,
-        listSelector: string = 'ul,ol'
+        listSelector: string = 'ul,ol',
+        serializer?: SerializerFn
     ): SerializedFlat {
         /**
          * If the element is not a listSelector then
@@ -964,7 +995,13 @@ export class HierarchyList {
         }
 
         const arr: SerializedFlat = [];
-        this._serializeFlat(element as HTMLElement, -1, arr, listSelector);
+        this._serializeFlat(
+            element as HTMLElement,
+            -1,
+            arr,
+            listSelector,
+            serializer
+        );
         return arr;
     }
 
@@ -972,11 +1009,15 @@ export class HierarchyList {
         list: HTMLElement,
         parent: number,
         arr: SerializedFlat,
-        listSelector: string
+        listSelector: string,
+        serializer?: SerializerFn
     ) {
         for (let i = 0; i < list.children.length; i++) {
             const child = list.children[i] as HTMLLIElement;
-            const val = { data: child.dataset, parent };
+            const val = {
+                data: serializer ? serializer(child) : child.dataset,
+                parent,
+            };
             arr.push(val);
             const inner = find(listSelector, child);
             if (inner) {
@@ -984,7 +1025,8 @@ export class HierarchyList {
                     inner as HTMLElement,
                     arr.length - 1,
                     arr,
-                    listSelector
+                    listSelector,
+                    serializer
                 );
             }
         }
@@ -992,7 +1034,8 @@ export class HierarchyList {
 
     public static serializeTree(
         element: HTMLElement,
-        listSelector: string = 'ol,ul'
+        listSelector: string = 'ol,ul',
+        serializer?: SerializerFn
     ): SerializedTree {
         /**
          * If the element is not a listSelector then
@@ -1007,14 +1050,20 @@ export class HierarchyList {
         }
 
         const arr: SerializedTree = [];
-        this._serializeTree(element as HTMLElement, arr, listSelector);
+        this._serializeTree(
+            element as HTMLElement,
+            arr,
+            listSelector,
+            serializer
+        );
         return arr;
     }
 
     private static _serializeTree(
         list: HTMLElement,
         arr: SerializedTree,
-        listSelector: string
+        listSelector: string,
+        serializer?: SerializerFn
     ) {
         for (let i = 0; i < list.children.length; i++) {
             const child = list.children[i] as HTMLLIElement;
@@ -1024,11 +1073,12 @@ export class HierarchyList {
                 this._serializeTree(
                     inner as HTMLElement,
                     children,
-                    listSelector
+                    listSelector,
+                    serializer
                 );
             }
             arr.push({
-                data: child.dataset,
+                data: serializer ? serializer(child) : child.dataset,
                 children,
             });
         }
@@ -1044,89 +1094,100 @@ export class HierarchyList {
 
     public addItem(
         item: HTMLElement,
-        target?: {
+        {
+            before,
+            after,
+            inside,
+        }: {
             before?: HTMLElement | string;
             after?: HTMLElement | string;
             inside?: HTMLElement | string;
-        }
+        } = {}
     ) {
         if (!item.matches(this.opts.itemSelector)) {
-            console.error(`[HierarchyList] provided item does not match: ${this.opts.itemSelector}`);
-            return;
-        }
-        
-        
-        let handle: any = item;
-        if (!handle.matches(this.opts.handleSelector)) {
-            handle = find(this.opts.handleSelector, item);
-        }
-        
-        if (!handle) {
-            console.error(`[HierarchyList] provided item does not have any handle: '${this.opts.handleSelector}'`);
-            return;
-        }
-
-        this.initHandle(handle);
-        
-        if (!target) {
-            // If there is no target then just append it in the list
-            let list: any = this.element;
-            if (!list.matches(this.opts.listSelector)) {
-                list = find(this.opts.listSelector, list);
-            }
-            if (list) {
-                list.appendChild(item);
-            }
-            return;
-        }
-
-        if (typeof target.before === 'string') {
-            target.before = find(target.before, this.element) as HTMLElement;
-        }
-        if (target.before) {
-            target.before.parentElement?.insertBefore(item, target.before);
-            return;
-        }
-
-        if (typeof target.after === 'string') {
-            target.after = find(target.after, this.element) as HTMLElement;
-        }
-        if (target.after) {
-            target.after.parentElement?.insertBefore(
-                item,
-                target.after.nextElementSibling
+            console.error(
+                `[HierarchyList] provided item does not match: ${this.opts.itemSelector}`
             );
             return;
         }
 
-        if (typeof target.inside === 'string') {
-            target.inside = find(target.inside, this.element) as HTMLElement;
+        let handle: any = item;
+        if (!handle.matches(this.opts.handleSelector)) {
+            handle = find(this.opts.handleSelector, item);
         }
-        if (target.inside) {
-            if (target.inside.matches(this.opts.listSelector)) {
-                target.inside.appendChild(item);
+
+        if (!handle) {
+            console.error(
+                `[HierarchyList] provided item does not have any handle: '${this.opts.handleSelector}'`
+            );
+            return;
+        }
+
+        this.initHandle(handle);
+
+        if (typeof before === 'string') {
+            before = find(before, this.element) as HTMLElement;
+        }
+        if (before) {
+            const list = before.closest(this.opts.listSelector);
+            list?.insertBefore(item, before.closest(this.opts.itemSelector));
+            const listParentItem = list?.closest(this.opts.itemSelector);
+            listParentItem &&
+                this.showOrHideActions(listParentItem as HTMLElement);
+            return;
+        }
+
+        if (typeof after === 'string') {
+            after = find(after, this.element) as HTMLElement;
+        }
+        if (after) {
+            const list = after.closest(this.opts.listSelector);
+            list?.insertBefore(
+                item,
+                after.closest(this.opts.itemSelector)
+                    ?.nextElementSibling as Element
+            );
+            const listParentItem = list?.closest(this.opts.itemSelector);
+            listParentItem &&
+                this.showOrHideActions(listParentItem as HTMLElement);
+            return;
+        }
+
+        if (typeof inside === 'string') {
+            inside = find(inside, this.element) as HTMLElement;
+        }
+        if (inside) {
+            if (inside.matches(this.opts.listSelector)) {
+                inside.appendChild(item);
                 return;
             }
-            let list = find(this.opts.listSelector, target.inside);
+            let list = find(this.opts.listSelector, inside);
             if (!list) {
                 list = document.createElement(this.opts.listTag) as HTMLElement;
                 addClass(list, this.opts.listClass);
-                target.inside.appendChild(list);
+                inside.appendChild(list);
             }
 
             list.appendChild(item);
-    
+
             // Expand the target
             this.expand(list);
-    
-            // Show the extract button
-            const extract = find(this.opts.extractBtn, list);
-            if (extract) {
-                extract.style.display = '';
-            }
+            const listParentItem = list?.closest(this.opts.itemSelector);
+            listParentItem &&
+                this.showOrHideActions(listParentItem as HTMLElement);
+            return;
         }
+        /**
+         * No match or no target was provided, so just insert it
+         */
 
-        console.warn('[HierarchyList] No target found to insert at: ', target);
+        let list: any = this.element;
+        if (!list.matches(this.opts.listSelector)) {
+            list = find(this.opts.listSelector, list);
+        }
+        if (list) {
+            list.appendChild(item);
+        }
     }
 }
 
@@ -1147,6 +1208,31 @@ function rmClass(el: HTMLElement, classes: string[]) {
 
 function addClass(el: HTMLElement, classes: string[]) {
     classes.forEach((name) => el.classList.add(name));
+}
+
+/**
+ * Creates a list item and returns it
+ * @param label 
+ * @param data 
+ * @returns 
+ */
+export function makeListItem(label: string, data: Record<string, string | undefined> = {}): HTMLElement {
+    const item = document.createElement('li');
+    item.className = 'phl-item';
+    item.innerHTML = `
+    <div class="phl-label-group">
+        <button type="button" class="phl-handle"></button>
+        <div class="phl-label">${label}</div>
+        <button type="button" class="phl-extract"></button>
+        <button type="button" class="phl-collapse"></button>
+        <button type="button" class="phl-expand"></button>
+    </div>
+    `;
+
+    for (let key in data) {
+        item.dataset[key] = data[key];
+    }
+    return item;
 }
 
 export default HierarchyList;

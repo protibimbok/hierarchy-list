@@ -3,11 +3,9 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" type="image/x-icon" href="/hierarchy-list/favicon.ico" />
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <title>Example page of hierarchy-list</title>
-        
-      <script type="module" crossorigin src="/hierarchy-list/assets/index-aafd943d.js"></script>
-      <link rel="stylesheet" href="/hierarchy-list/assets/index-f1d9b2fa.css">
+        <link rel="stylesheet" href="./src/style.css" />
     </head>
     <body>
         <header class="sticky top-0 max-w-full left-0 z-20">
@@ -96,72 +94,38 @@
             </nav>
         </header>
 
-        <div class="w-full flex flex-col justify-center items-center p-4">
-            <div class="w-full max-w-6xl md:grid gap-4 grid-cols-2">
-                <div class="shadow-lg rounded-md min-w-[300px] border-t">
-                    <div class="flex px-4 py-2.5 items-center border-b">
-                        <h3 class="flex-grow">List 1</h3>
-                        <button type="button" class="bg-blue-500 text-white rounded-md px-4 py-2.5 hover:bg-blue-600" id="add-item">Add</button>
-                    </div>
-                    <ul class="phl-list border m-4" id="app1"></ul>
-                </div>
-                <div class="shadow-lg rounded-lg border p-4">
-                    <div class="mb-2">
-                        <label
-                            for="flat-1"
-                            class="block mb-2 text-sm font-medium text-gray-900"
-                            >Flat 1</label
-                        >
-                        <pre
-                            id="flat-1"
-                            class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 overflow-auto max-h-96 min-h-[100px]"
-                        ></pre>
-                    </div>
-
-                    <div class="mt-2">
-                        <label
-                            for="tree-1"
-                            class="block mb-2 text-sm font-medium text-gray-900"
-                            >Tree 1</label
-                        >
-                        <pre
-                            id="tree-1"
-                            class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 overflow-auto max-h-96 min-h-[100px]"
-                        ></pre>
-                    </div>
-                </div>
-
-                <ul
-                    class="shadow-lg rounded-md min-w-[300px] phl-list border"
-                    id="app2"
-                ></ul>
-
-                <div class="shadow-lg rounded-lg border p-4">
-                    <div class="mb-2">
-                        <label
-                            for="flat-2"
-                            class="block mb-2 text-sm font-medium text-gray-900"
-                            >Flat 2</label
-                        >
-                        <pre
-                            id="flat-2"
-                            class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 overflow-auto max-h-96 min-h-[100px]"
-                        ></pre>
-                    </div>
-                    <div class="mt-2">
-                        <label
-                            for="tree-2"
-                            class="block mb-2 text-sm font-medium text-gray-900"
-                            >Tree 2</label
-                        >
-                        <pre
-                            id="tree-2"
-                            class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 overflow-auto max-h-96 min-h-[100px]"
-                        ></pre>
-                    </div>
-                </div>
+        <div class="max-w-md mx-auto rounded shadow-md my-10">
+            <div class="flex flex-wrap gap-3 border-b p-2" id="btns">
+                <button
+                    data-after="[data-index='1']"
+                    type="button"
+                    class="rounded shadow-sm px-3 py-1.5 text-sm font-semibold uppercase bg-emerald-500 hover:bg-emerald-600 text-white"
+                >
+                    After 1
+                </button>
+                <button
+                    data-before="[data-index='3']"
+                    type="button"
+                    class="rounded shadow-sm px-3 py-1.5 text-sm font-semibold uppercase bg-emerald-500 hover:bg-emerald-600 text-white"
+                >
+                    Before 3
+                </button>
+                <button
+                    data-inside="[data-index='4']"
+                    type="button"
+                    class="rounded shadow-sm px-3 py-1.5 text-sm font-semibold uppercase bg-emerald-500 hover:bg-emerald-600 text-white"
+                >
+                    Inside 4
+                </button>
+                <button
+                    type="button"
+                    class="rounded shadow-sm px-3 py-1.5 text-sm font-semibold uppercase bg-emerald-500 hover:bg-emerald-600 text-white"
+                >
+                    No Target
+                </button>
             </div>
+            <ul id="list" class="phl-list"></ul>
         </div>
-        
+        <script type="module" src="/example/insert.ts"></script>
     </body>
 </html>
