@@ -210,6 +210,20 @@ The SerializedTree format represents the nested structure of the list, where eac
 
 By calling `list.serialize()` or `list.serializeTree()`, you can obtain the serialized data in either the flat or tree format, depending on their specific requirements for further processing or storage.
 
+### Custom serializer
+
+Even though it returns the dataset as the serialized data, you can customize this as you want.
+```javascript
+list.serialize((el: HTMLElement) => {
+    /**
+     * This serializer returns the label along with dataset
+     */
+    const data = {...el.dataset};
+    data.label = el.querySelector('.phl-label')?.innerHTML;
+    return data;
+});
+```
+
 ## Add new item
 
 You can add an item in the go as:
@@ -225,6 +239,29 @@ list.addItem(
 )
 ```
 
+
+If you are using the default configurations for the `listSelector` & `itemSelector` then there is a helper function to create list elements
+```javascript
+import HierarchyList, { makeListItem } from 'hierarchy-list';
+
+const item = makeListItem(`Your label`, {
+    // Dataset
+    id: 'some-id'
+});
+```
+the previous item would return
+
+```html
+<li class="phl-item" data-id="some-id">
+    <div class="phl-label-group">
+        <button type="button" class="phl-handle"></button>
+        <div class="phl-label">Your Label</div>
+        <button type="button" class="phl-extract"></button>
+        <button type="button" class="phl-collapse"></button>
+        <button type="button" class="phl-expand"></button>
+    </div>
+</li>
+```
 ## Configuration
 
 The HierarchyList library provides several configuration options to customize its behavior. These options allow you to control the HTML structure, styling, and event handling. The Config interface merges the options from both BaseConfig and EventListeners.
