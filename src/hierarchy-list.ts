@@ -1218,8 +1218,9 @@ function addClass(el: HTMLElement, classes: string[]) {
  */
 export function makeListItem(label: string, data: Record<string, string | undefined> = {}): HTMLElement {
     const item = document.createElement('li');
+    item.className = 'phl-item';
     item.innerHTML = `
-    <div class="phl-element">
+    <div class="phl-label-group">
         <button type="button" class="phl-handle"></button>
         <div class="phl-label">${label}</div>
         <button type="button" class="phl-extract"></button>
