@@ -873,10 +873,9 @@ export class HierarchyList {
         const subList = find(this.opts.listSelector, el);
         const parent = el.parentElement;
 
-        // As there will be no innerlist, hide the buttons
-        this.showOrHideActions(el);
-
         if (!subList || !parent) {
+            // As there is no innerlist, hide the buttons
+            this.showOrHideActions(el);
             return;
         }
 
@@ -897,6 +896,9 @@ export class HierarchyList {
 
         //  Remove the inner list
         subList.remove();
+        
+        // As there is innerlist, hide the buttons
+        this.showOrHideActions(el);
 
         // Dispatch the extract event
         this.ctx.dispatch('extract');
@@ -1206,6 +1208,30 @@ function rmClass(el: HTMLElement, classes: string[]) {
 
 function addClass(el: HTMLElement, classes: string[]) {
     classes.forEach((name) => el.classList.add(name));
+}
+
+/**
+ * Creates a list item and returns it
+ * @param label 
+ * @param data 
+ * @returns 
+ */
+export function makeListItem(label: string, data: Record<string, string | undefined> = {}): HTMLElement {
+    const item = document.createElement('li');
+    item.innerHTML = `
+    <div class="phl-element">
+        <button type="button" class="phl-handle"></button>
+        <div class="phl-label">${label}</div>
+        <button type="button" class="phl-extract"></button>
+        <button type="button" class="phl-collapse"></button>
+        <button type="button" class="phl-expand"></button>
+    </div>
+    `;
+
+    for (let key in data) {
+        item.dataset[key] = data[key];
+    }
+    return item;
 }
 
 export default HierarchyList;
