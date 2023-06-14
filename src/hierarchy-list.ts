@@ -960,7 +960,11 @@ export class HierarchyList {
     }
 
     public serialize(serializer?: SerializerFn): SerializedFlat {
-        return HierarchyList.serialize(this.element, this.opts.listSelector, serializer);
+        return HierarchyList.serialize(
+            this.element,
+            this.opts.listSelector,
+            serializer
+        );
     }
 
     public serializeTree(serializer?: SerializerFn): SerializedTree {
@@ -989,7 +993,13 @@ export class HierarchyList {
         }
 
         const arr: SerializedFlat = [];
-        this._serializeFlat(element as HTMLElement, -1, arr, listSelector, serializer);
+        this._serializeFlat(
+            element as HTMLElement,
+            -1,
+            arr,
+            listSelector,
+            serializer
+        );
         return arr;
     }
 
@@ -1002,7 +1012,10 @@ export class HierarchyList {
     ) {
         for (let i = 0; i < list.children.length; i++) {
             const child = list.children[i] as HTMLLIElement;
-            const val = { data: serializer?serializer(child):child.dataset, parent };
+            const val = {
+                data: serializer ? serializer(child) : child.dataset,
+                parent,
+            };
             arr.push(val);
             const inner = find(listSelector, child);
             if (inner) {
@@ -1035,7 +1048,12 @@ export class HierarchyList {
         }
 
         const arr: SerializedTree = [];
-        this._serializeTree(element as HTMLElement, arr, listSelector, serializer);
+        this._serializeTree(
+            element as HTMLElement,
+            arr,
+            listSelector,
+            serializer
+        );
         return arr;
     }
 
@@ -1058,7 +1076,7 @@ export class HierarchyList {
                 );
             }
             arr.push({
-                data: serializer?serializer(child):child.dataset,
+                data: serializer ? serializer(child) : child.dataset,
                 children,
             });
         }
@@ -1074,11 +1092,15 @@ export class HierarchyList {
 
     public addItem(
         item: HTMLElement,
-        target?: {
+        {
+            before,
+            after,
+            inside,
+        }: {
             before?: HTMLElement | string;
             after?: HTMLElement | string;
             inside?: HTMLElement | string;
-        }
+        } = {}
     ) {
         if (!item.matches(this.opts.itemSelector)) {
             console.error(
@@ -1101,41 +1123,26 @@ export class HierarchyList {
 
         this.initHandle(handle);
 
-        if (!target) {
-            // If there is no target then just append it in the list
-            let list: any = this.element;
-            if (!list.matches(this.opts.listSelector)) {
-                list = find(this.opts.listSelector, list);
-            }
-            if (list) {
-                list.appendChild(item);
-            }
-            return;
+        if (typeof before === 'string') {
+            before = find(before, this.element) as HTMLElement;
         }
-
-        if (typeof target.before === 'string') {
-            target.before = find(target.before, this.element) as HTMLElement;
-        }
-        if (target.before) {
-            const list = target.before.closest(this.opts.listSelector);
-            list?.insertBefore(
-                item,
-                target.before.closest(this.opts.itemSelector)
-            );
+        if (before) {
+            const list = before.closest(this.opts.listSelector);
+            list?.insertBefore(item, before.closest(this.opts.itemSelector));
             const listParentItem = list?.closest(this.opts.itemSelector);
             listParentItem &&
                 this.showOrHideActions(listParentItem as HTMLElement);
             return;
         }
 
-        if (typeof target.after === 'string') {
-            target.after = find(target.after, this.element) as HTMLElement;
+        if (typeof after === 'string') {
+            after = find(after, this.element) as HTMLElement;
         }
-        if (target.after) {
-            const list = target.after.closest(this.opts.listSelector);
+        if (after) {
+            const list = after.closest(this.opts.listSelector);
             list?.insertBefore(
                 item,
-                target.after.closest(this.opts.itemSelector)
+                after.closest(this.opts.itemSelector)
                     ?.nextElementSibling as Element
             );
             const listParentItem = list?.closest(this.opts.itemSelector);
@@ -1144,19 +1151,19 @@ export class HierarchyList {
             return;
         }
 
-        if (typeof target.inside === 'string') {
-            target.inside = find(target.inside, this.element) as HTMLElement;
+        if (typeof inside === 'string') {
+            inside = find(inside, this.element) as HTMLElement;
         }
-        if (target.inside) {
-            if (target.inside.matches(this.opts.listSelector)) {
-                target.inside.appendChild(item);
+        if (inside) {
+            if (inside.matches(this.opts.listSelector)) {
+                inside.appendChild(item);
                 return;
             }
-            let list = find(this.opts.listSelector, target.inside);
+            let list = find(this.opts.listSelector, inside);
             if (!list) {
                 list = document.createElement(this.opts.listTag) as HTMLElement;
                 addClass(list, this.opts.listClass);
-                target.inside.appendChild(list);
+                inside.appendChild(list);
             }
 
             list.appendChild(item);
@@ -1168,8 +1175,17 @@ export class HierarchyList {
                 this.showOrHideActions(listParentItem as HTMLElement);
             return;
         }
+        /**
+         * No match or no target was provided, so just insert it
+         */
 
-        console.warn('[HierarchyList] No target found to insert at: ', target);
+        let list: any = this.element;
+        if (!list.matches(this.opts.listSelector)) {
+            list = find(this.opts.listSelector, list);
+        }
+        if (list) {
+            list.appendChild(item);
+        }
     }
 }
 
